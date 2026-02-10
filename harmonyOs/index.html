@@ -1,0 +1,2350 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HarmonyOS WebOS Simulator</title>
+    <style>
+      :root {
+        --blue-0: #eaf5ff;
+        --blue-1: #d5ecff;
+        --blue-2: #b6defe;
+        --blue-3: #83c2f9;
+        --blue-4: #3b95ed;
+        --blue-5: #0c6fe4;
+        --text-1: #0f2034;
+        --text-2: #4b6683;
+        --card: rgba(255, 255, 255, 0.72);
+        --glass: rgba(255, 255, 255, 0.44);
+        --line: rgba(9, 53, 94, 0.12);
+        --radius-l: 24px;
+        --radius-m: 16px;
+        --shadow: 0 12px 28px rgba(8, 36, 79, 0.23);
+        --z-wallpaper: 1;
+        --z-home: 10;
+        --z-app: 20;
+        --z-sheet: 30;
+        --z-overlays: 40;
+        --z-keyboard: 45;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+        font-family:
+          "HarmonyOS Sans", "Segoe UI", "PingFang SC", "Microsoft YaHei",
+          sans-serif;
+        background:
+          radial-gradient(1200px 600px at 16% 12%, #65bbff 0%, transparent 52%),
+          radial-gradient(900px 520px at 84% 84%, #7acbff 0%, transparent 58%),
+          linear-gradient(140deg, #0f5fd2 0%, #1f8ff7 36%, #78ccff 100%);
+        color: var(--text-1);
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+      }
+
+      .device-shell {
+        width: 390px;
+        height: 844px;
+        border-radius: 48px;
+        background: #0d0d11;
+        padding: 10px;
+        box-shadow: 0 26px 70px rgba(0, 0, 0, 0.42);
+        position: relative;
+      }
+
+      .phone {
+        width: 100%;
+        height: 100%;
+        border-radius: 40px;
+        overflow: hidden;
+        position: relative;
+        background: #b9deff;
+        touch-action: none;
+      }
+
+      .camera-hole {
+        position: absolute;
+        top: 9px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 112px;
+        height: 32px;
+        border-radius: 18px;
+        background: #090b10;
+        z-index: 100;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+        pointer-events: none;
+      }
+
+      #Wallpaper {
+        position: absolute;
+        inset: 0;
+        z-index: var(--z-wallpaper);
+        background:
+          radial-gradient(
+            240px 240px at 16% 14%,
+            rgba(255, 255, 255, 0.35),
+            transparent 56%
+          ),
+          radial-gradient(
+            310px 310px at 82% 18%,
+            rgba(12, 111, 228, 0.5),
+            transparent 56%
+          ),
+          radial-gradient(
+            360px 420px at 52% 68%,
+            rgba(180, 232, 255, 0.57),
+            transparent 58%
+          ),
+          linear-gradient(180deg, #1e95f6 0%, #8ad4ff 60%, #a2ddff 100%);
+      }
+
+      #Wallpaper::before,
+      #Wallpaper::after {
+        content: "";
+        position: absolute;
+        border-radius: 48% 52% 56% 44% / 48% 40% 60% 52%;
+        background: linear-gradient(
+          165deg,
+          rgba(255, 255, 255, 0.28),
+          rgba(17, 113, 232, 0.16)
+        );
+        filter: blur(0.2px);
+      }
+
+      #Wallpaper::before {
+        width: 320px;
+        height: 460px;
+        left: -130px;
+        top: 190px;
+        transform: rotate(22deg);
+      }
+
+      #Wallpaper::after {
+        width: 280px;
+        height: 420px;
+        right: -110px;
+        top: 120px;
+        transform: rotate(-18deg);
+      }
+
+      .layer {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(10px) scale(0.995);
+        transition:
+          opacity 260ms ease,
+          transform 280ms cubic-bezier(0.2, 0.82, 0.2, 1),
+          visibility 0ms linear 300ms;
+        pointer-events: none;
+      }
+
+      .layer.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0) scale(1);
+        transition-delay: 0ms;
+        pointer-events: auto;
+      }
+
+      .status-bar {
+        height: 42px;
+        padding: 12px 20px 0;
+        color: #f7fbff;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 14px;
+        letter-spacing: 0.2px;
+        text-shadow: 0 1px 4px rgba(0, 40, 91, 0.32);
+      }
+
+      .status-right {
+        display: flex;
+        gap: 7px;
+        align-items: center;
+        color: #eaf6ff;
+      }
+
+      .signal,
+      .wifi,
+      .battery {
+        display: inline-block;
+        height: 10px;
+        border-radius: 2px;
+        border: 1px solid rgba(238, 248, 255, 0.84);
+        position: relative;
+      }
+
+      .signal {
+        width: 15px;
+        border: none;
+        background: linear-gradient(to right, #eaf7ff 2px, transparent 2px) left
+          0 top 6px / 3px 4px repeat-x;
+      }
+
+      .wifi {
+        width: 12px;
+        border: none;
+        border-top: 2px solid #eaf7ff;
+        border-radius: 50% 50% 0 0;
+        height: 8px;
+        transform: translateY(2px);
+      }
+
+      .battery {
+        width: 20px;
+        border-radius: 3px;
+      }
+
+      .battery::before {
+        content: "";
+        position: absolute;
+        right: -3px;
+        top: 2px;
+        width: 2px;
+        height: 4px;
+        background: rgba(238, 248, 255, 0.9);
+        border-radius: 1px;
+      }
+
+      .battery::after {
+        content: "";
+        position: absolute;
+        left: 1px;
+        top: 1px;
+        right: 5px;
+        bottom: 1px;
+        border-radius: 2px;
+        background: #e8f6ff;
+      }
+
+      #LockScreen {
+        z-index: var(--z-home);
+        display: flex;
+        flex-direction: column;
+        color: #f8fdff;
+        background: linear-gradient(
+          to bottom,
+          rgba(0, 64, 124, 0.22),
+          rgba(15, 79, 142, 0.14)
+        );
+      }
+
+      .lock-center {
+        margin-top: 95px;
+        text-align: center;
+        text-shadow: 0 4px 18px rgba(0, 45, 87, 0.46);
+      }
+
+      .lock-time {
+        font-size: 78px;
+        font-weight: 450;
+        line-height: 0.95;
+        letter-spacing: -1px;
+      }
+
+      .lock-date {
+        margin-top: 8px;
+        font-size: 20px;
+        font-weight: 500;
+        opacity: 0.95;
+      }
+
+      .lock-card {
+        margin: 36px 18px 0;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(18px);
+        border: 1px solid rgba(255, 255, 255, 0.34);
+        padding: 14px 16px;
+        font-size: 13px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .unlock-tip {
+        margin-top: auto;
+        margin-bottom: 36px;
+        text-align: center;
+        font-size: 12px;
+        opacity: 0.92;
+      }
+
+      .unlock-bar {
+        width: 52px;
+        height: 6px;
+        border-radius: 4px;
+        margin: 0 auto 8px;
+        background: rgba(255, 255, 255, 0.88);
+        box-shadow: 0 0 12px rgba(255, 255, 255, 0.33);
+      }
+
+      #HomeScreen {
+        z-index: var(--z-home);
+        padding-bottom: 12px;
+      }
+
+      .home-search {
+        margin: 8px 16px 10px;
+        height: 42px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.62);
+        border: 1px solid rgba(255, 255, 255, 0.58);
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        gap: 10px;
+        backdrop-filter: blur(16px);
+        box-shadow: 0 6px 18px rgba(4, 58, 121, 0.18);
+      }
+
+      .search-dot {
+        width: 14px;
+        height: 14px;
+        border: 2px solid #4d77a0;
+        border-radius: 50%;
+        position: relative;
+      }
+
+      .search-dot::after {
+        content: "";
+        position: absolute;
+        width: 6px;
+        height: 2px;
+        background: #4d77a0;
+        right: -5px;
+        bottom: -1px;
+        transform: rotate(38deg);
+        border-radius: 1px;
+      }
+
+      .search-input {
+        border: 0;
+        outline: 0;
+        background: transparent;
+        width: 100%;
+        font-size: 14px;
+        color: #234463;
+      }
+
+      .home-search-results {
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        top: 94px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid rgba(255, 255, 255, 0.74);
+        box-shadow: 0 12px 22px rgba(11, 67, 124, 0.22);
+        backdrop-filter: blur(14px);
+        padding: 8px;
+        max-height: 240px;
+        overflow: auto;
+        display: none;
+        z-index: 19;
+      }
+
+      .home-search-results.active {
+        display: block;
+      }
+
+      .search-group-title {
+        font-size: 11px;
+        color: #4d6d8c;
+        padding: 6px 8px 4px;
+      }
+
+      .search-result-item {
+        width: 100%;
+        border: 0;
+        border-radius: 12px;
+        min-height: 38px;
+        padding: 0 10px;
+        text-align: left;
+        font-size: 13px;
+        color: #1f4a72;
+        background: rgba(231, 244, 255, 0.78);
+        margin-bottom: 6px;
+      }
+
+      .search-result-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .search-result-item:active {
+        transform: scale(0.99);
+      }
+
+      .desktop-grid {
+        margin: 0 14px;
+        height: 680px;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-auto-rows: 78px;
+        gap: 10px;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid rgba(255, 255, 255, 0.56);
+        border-radius: var(--radius-m);
+        backdrop-filter: blur(20px);
+        box-shadow: 0 10px 24px rgba(4, 63, 126, 0.17);
+      }
+
+      .widget-weather {
+        grid-column: span 2;
+        grid-row: span 2;
+        border-radius: 24px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        background:
+          radial-gradient(
+            120px 80px at 84% 20%,
+            rgba(255, 255, 255, 0.8),
+            transparent 70%
+          ),
+          linear-gradient(170deg, #ffefac, #ffd56f 34%, #9cc9ff 100%);
+        border-color: rgba(255, 255, 255, 0.72);
+      }
+
+      .weather-top {
+        font-size: 12px;
+        color: #735e1f;
+        font-weight: 600;
+      }
+
+      .weather-temp {
+        font-size: 44px;
+        line-height: 1;
+        color: #10335a;
+        font-weight: 600;
+        letter-spacing: -0.8px;
+      }
+
+      .weather-meta {
+        font-size: 12px;
+        color: #2a5378;
+      }
+
+      .widget-steps {
+        grid-column: span 2;
+        border-radius: 18px;
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(
+          140deg,
+          rgba(255, 255, 255, 0.78),
+          rgba(208, 237, 255, 0.68)
+        );
+      }
+
+      .steps-pill {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: linear-gradient(165deg, #ffad3f, #ff7f2d);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+      }
+
+      .morph-widget {
+        grid-column: span 2;
+        grid-row: span 2;
+        display: none;
+        padding: 12px;
+        border-radius: 22px;
+        background: linear-gradient(
+          150deg,
+          rgba(255, 255, 255, 0.85),
+          rgba(191, 228, 255, 0.9)
+        );
+        animation: spring-in 320ms cubic-bezier(0.19, 1, 0.22, 1);
+      }
+
+      .morph-widget.visible {
+        display: block;
+      }
+
+      .morph-widget h4 {
+        font-size: 14px;
+        color: #173959;
+      }
+
+      .morph-widget p {
+        margin-top: 7px;
+        color: #3c6286;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      .large-folder {
+        grid-column: span 2;
+        grid-row: span 2;
+        border-radius: 24px;
+        padding: 12px;
+        background: linear-gradient(
+          170deg,
+          rgba(255, 255, 255, 0.78),
+          rgba(170, 220, 255, 0.65)
+        );
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .folder-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 6px;
+      }
+
+      .mini-app {
+        width: 58px;
+        height: 58px;
+        border: 0;
+        border-radius: 17px;
+        background: rgba(255, 255, 255, 0.7);
+        box-shadow: 0 10px 16px rgba(0, 50, 100, 0.18);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .mini-app:active {
+        transform: scale(0.96);
+      }
+
+      .mini-app::before {
+        content: "";
+        position: absolute;
+        inset: 1px;
+        border-radius: 15px;
+        background: linear-gradient(
+          165deg,
+          rgba(255, 255, 255, 0.75),
+          rgba(197, 230, 255, 0.72)
+        );
+        z-index: 0;
+      }
+
+      .mini-icon {
+        position: relative;
+        z-index: 1;
+        width: 29px;
+        height: 29px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(180deg, #38a8ff, #0f74eb);
+        color: #fff;
+      }
+
+      .mini-app.mini-green .mini-icon {
+        background: linear-gradient(180deg, #4ccf77, #1fa95a);
+      }
+
+      .mini-app.mini-orange .mini-icon {
+        background: linear-gradient(180deg, #ffb85d, #ff8a34);
+      }
+
+      .mini-app.mini-violet .mini-icon {
+        background: linear-gradient(180deg, #8a8eff, #5d62ff);
+      }
+
+      .mini-icon svg {
+        width: 18px;
+        height: 18px;
+        stroke-width: 2.2;
+      }
+
+      .app-icon-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        position: relative;
+      }
+
+      .app-icon {
+        width: 58px;
+        height: 58px;
+        border-radius: 17px;
+        border: 1px solid rgba(255, 255, 255, 0.65);
+        background: rgba(255, 255, 255, 0.7);
+        box-shadow: 0 10px 16px rgba(0, 50, 100, 0.18);
+        color: #0d355d;
+        font-size: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        transition:
+          transform 180ms ease,
+          box-shadow 220ms ease;
+        position: relative;
+        overflow: hidden;
+        border: 0;
+      }
+
+      .app-icon::before {
+        content: "";
+        position: absolute;
+        inset: 1px;
+        border-radius: 15px;
+        background: linear-gradient(
+          165deg,
+          rgba(255, 255, 255, 0.75),
+          rgba(197, 230, 255, 0.72)
+        );
+        z-index: 0;
+      }
+
+      .app-icon .glyph {
+        position: relative;
+        z-index: 1;
+        width: 29px;
+        height: 29px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(180deg, #38a8ff, #0f74eb);
+        color: #fff;
+        font-size: 12px;
+      }
+
+      .app-icon .glyph svg {
+        width: 18px;
+        height: 18px;
+        stroke-width: 2.2;
+      }
+
+      .app-icon.app-green .glyph {
+        background: linear-gradient(180deg, #4ccf77, #1fa95a);
+      }
+
+      .app-icon.app-orange .glyph {
+        background: linear-gradient(180deg, #ffb85d, #ff8a34);
+      }
+
+      .app-icon.app-violet .glyph {
+        background: linear-gradient(180deg, #8a8eff, #5d62ff);
+      }
+
+      .app-icon.app-cyan .glyph {
+        background: linear-gradient(180deg, #3ed3de, #1e9dac);
+      }
+
+      .app-icon:active {
+        transform: scale(0.94);
+        box-shadow: 0 8px 12px rgba(0, 52, 106, 0.15);
+      }
+
+      .icon-title {
+        font-size: 11px;
+        color: #08365d;
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+        white-space: nowrap;
+      }
+
+      .snippet-bar {
+        width: 20px;
+        height: 3px;
+        border-radius: 3px;
+        background: rgba(11, 62, 114, 0.35);
+        position: absolute;
+        bottom: 16px;
+      }
+
+      .dock {
+        position: absolute;
+        left: 14px;
+        right: 14px;
+        bottom: 12px;
+        height: 74px;
+        border-radius: 22px;
+        background: rgba(235, 248, 255, 0.64);
+        border: 1px solid rgba(255, 255, 255, 0.77);
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        backdrop-filter: blur(22px);
+        box-shadow: var(--shadow);
+      }
+
+      .dock .app-icon-wrap {
+        gap: 0;
+      }
+
+      .home-indicator {
+        position: absolute;
+        width: 130px;
+        height: 5px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.85);
+        left: 50%;
+        bottom: 4px;
+        transform: translateX(-50%);
+        box-shadow: 0 2px 6px rgba(0, 47, 95, 0.3);
+      }
+
+      #AppContainer {
+        z-index: var(--z-app);
+        background: rgba(218, 241, 255, 0.85);
+        backdrop-filter: blur(12px);
+      }
+
+      .app-page {
+        position: absolute;
+        inset: 0;
+        display: none;
+        background: linear-gradient(180deg, #e8f4ff 0%, #d3ebff 100%);
+        color: #163251;
+      }
+
+      .app-page.active {
+        display: block;
+        animation: app-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      .app-header {
+        height: 58px;
+        padding: 16px 14px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 650;
+      }
+
+      .back-btn {
+        border: 0;
+        width: 34px;
+        height: 34px;
+        border-radius: 11px;
+        background: rgba(255, 255, 255, 0.72);
+        color: #1b4e7f;
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      .app-body {
+        height: calc(100% - 58px);
+        overflow: auto;
+        padding: 10px 14px 88px;
+      }
+
+      .setting-account {
+        border-radius: 24px;
+        background: linear-gradient(150deg, #5db6ff, #2a89ed);
+        padding: 16px;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+        box-shadow: 0 14px 24px rgba(20, 111, 200, 0.26);
+      }
+
+      .avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(150deg, #fff, #d7ecff);
+        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.6);
+      }
+
+      .list-card {
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid rgba(255, 255, 255, 0.66);
+        border-radius: 18px;
+        margin-bottom: 12px;
+        overflow: hidden;
+        box-shadow: 0 8px 18px rgba(14, 72, 130, 0.14);
+      }
+
+      .row {
+        min-height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 14px;
+        font-size: 14px;
+        border-bottom: 1px solid rgba(12, 70, 130, 0.08);
+      }
+
+      .row:last-child {
+        border-bottom: 0;
+      }
+
+      .sub {
+        color: #4f6d8e;
+        font-size: 12px;
+      }
+
+      .switch {
+        width: 42px;
+        height: 24px;
+        border-radius: 20px;
+        background: #c8d8e8;
+        position: relative;
+        transition: background 180ms ease;
+        border: 0;
+      }
+
+      .switch::after {
+        content: "";
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        left: 2px;
+        top: 2px;
+        background: white;
+        transition: left 180ms ease;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      }
+
+      .switch.on {
+        background: #2f95ff;
+      }
+
+      .switch.on::after {
+        left: 20px;
+      }
+
+      .slider {
+        width: 100%;
+        accent-color: #2e8df2;
+      }
+
+      .moment-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-auto-rows: 70px;
+        gap: 8px;
+      }
+
+      .photo-tile {
+        border-radius: 16px;
+        overflow: hidden;
+        position: relative;
+        cursor: pointer;
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        box-shadow: 0 8px 16px rgba(12, 58, 108, 0.14);
+        background-size: cover;
+        background-position: center;
+      }
+
+      .photo-tile.big {
+        grid-column: span 2;
+        grid-row: span 2;
+      }
+
+      .photo-tile.wide {
+        grid-column: span 2;
+      }
+
+      .photo-tag {
+        position: absolute;
+        left: 8px;
+        bottom: 8px;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.95);
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+      }
+
+      .photo-viewer {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 8;
+        overflow: hidden;
+        touch-action: none;
+      }
+
+      .photo-viewer.active {
+        display: flex;
+      }
+
+      .viewer-img {
+        width: 86%;
+        height: 62%;
+        border-radius: 22px;
+        background-size: cover;
+        background-position: center;
+        transition: transform 120ms linear;
+        transform-origin: center center;
+      }
+
+      .viewer-close {
+        position: absolute;
+        top: 22px;
+        right: 14px;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: 0;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.2);
+        font-size: 20px;
+      }
+
+      .service-cards {
+        display: grid;
+        gap: 10px;
+      }
+
+      .service-card {
+        background: rgba(255, 255, 255, 0.79);
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        border-radius: 18px;
+        padding: 12px;
+        box-shadow: 0 8px 16px rgba(14, 74, 136, 0.13);
+      }
+
+      .service-card button {
+        margin-top: 8px;
+        border: 0;
+        background: #2388f3;
+        color: #fff;
+        border-radius: 10px;
+        font-size: 12px;
+        padding: 6px 10px;
+      }
+
+      .meetime-bg {
+        width: 100%;
+        height: 360px;
+        border-radius: 26px;
+        background:
+          radial-gradient(
+            130px 130px at 50% 30%,
+            rgba(255, 255, 255, 0.5),
+            transparent 80%
+          ),
+          linear-gradient(
+            180deg,
+            rgba(27, 119, 213, 0.35),
+            rgba(13, 88, 159, 0.65)
+          );
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(8px);
+      }
+
+      .meetime-avatar {
+        width: 130px;
+        height: 130px;
+        border-radius: 50%;
+        margin: 42px auto 16px;
+        background: linear-gradient(160deg, #ebf6ff, #a8cff4);
+        filter: blur(0.2px);
+        box-shadow: 0 12px 26px rgba(8, 59, 111, 0.35);
+      }
+
+      .meetime-label {
+        text-align: center;
+        color: #f4fbff;
+        font-size: 22px;
+        font-weight: 550;
+        text-shadow: 0 3px 10px rgba(2, 40, 77, 0.4);
+      }
+
+      .secure {
+        text-align: center;
+        color: #d8f0ff;
+        font-size: 13px;
+        margin-top: 8px;
+      }
+
+      .dialer {
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 20px;
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.7);
+      }
+
+      .dial-input {
+        width: 100%;
+        border: 0;
+        border-radius: 12px;
+        background: rgba(240, 248, 255, 0.9);
+        font-size: 22px;
+        text-align: center;
+        padding: 10px 8px;
+        color: #204364;
+        letter-spacing: 1px;
+        outline: 0;
+      }
+
+      .dial-pad {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .dial-key {
+        height: 54px;
+        border: 0;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.95);
+        font-size: 20px;
+        color: #19456d;
+        box-shadow: 0 6px 12px rgba(8, 60, 109, 0.12);
+      }
+
+      .dial-actions {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+      }
+
+      .btn {
+        flex: 1;
+        border: 0;
+        border-radius: 14px;
+        height: 44px;
+        color: white;
+        font-size: 14px;
+        font-weight: 650;
+      }
+
+      .btn-call {
+        background: linear-gradient(180deg, #42c870, #1ca65b);
+      }
+
+      .btn-hang {
+        background: linear-gradient(180deg, #ff6f6f, #df4343);
+      }
+
+      .call-status {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #3d5c7b;
+        text-align: center;
+      }
+
+      .files-shell {
+        display: grid;
+        gap: 10px;
+      }
+
+      .path {
+        font-size: 12px;
+        color: #4f6b88;
+      }
+
+      .file-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .tiny-btn {
+        border: 0;
+        background: #2189f2;
+        color: #fff;
+        border-radius: 10px;
+        height: 34px;
+        padding: 0 12px;
+        font-size: 12px;
+        white-space: nowrap;
+        min-width: 78px;
+        flex: 0 0 auto;
+      }
+
+      .file-list {
+        background: rgba(255, 255, 255, 0.83);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.74);
+        overflow: hidden;
+      }
+
+      .file-item {
+        height: 44px;
+        padding: 0 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(10, 63, 119, 0.08);
+        font-size: 13px;
+      }
+
+      .file-item:last-child {
+        border-bottom: 0;
+      }
+
+      .file-name {
+        cursor: pointer;
+      }
+
+      .danger {
+        background: transparent;
+        border: 0;
+        color: #dd5353;
+        font-size: 12px;
+      }
+
+      .browser-box {
+        display: grid;
+        gap: 8px;
+      }
+
+      .url-row {
+        display: flex;
+        gap: 6px;
+      }
+
+      .url-input {
+        flex: 1;
+        border: 0;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.84);
+        padding: 10px 10px;
+        font-size: 13px;
+        outline: 0;
+        color: #1b4268;
+      }
+
+      .web-frame {
+        width: 100%;
+        height: 500px;
+        border: 0;
+        border-radius: 18px;
+        background: white;
+        box-shadow: 0 8px 16px rgba(9, 58, 108, 0.13);
+      }
+
+      .messages-wrap {
+        display: grid;
+        grid-template-columns: 40% 60%;
+        gap: 8px;
+        height: 560px;
+      }
+
+      .message-filters {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .filter-pill {
+        border: 0;
+        height: 30px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.86);
+        color: #2a5278;
+        font-size: 12px;
+      }
+
+      .filter-pill.active {
+        background: linear-gradient(180deg, #44a9ff, #1f83ee);
+        color: #fff;
+      }
+
+      .mail-list,
+      .mail-detail {
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.66);
+        overflow: auto;
+        padding: 8px;
+      }
+
+      .mail-item {
+        border-radius: 12px;
+        padding: 8px;
+        margin-bottom: 6px;
+        background: rgba(238, 248, 255, 0.9);
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      .mail-item.active {
+        background: #d8ecff;
+      }
+
+      .calc {
+        width: 100%;
+        max-width: 300px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.84);
+        border: 1px solid rgba(255, 255, 255, 0.77);
+        border-radius: 20px;
+        padding: 12px;
+        box-shadow: 0 10px 20px rgba(6, 61, 117, 0.14);
+      }
+
+      .calc-display {
+        width: 100%;
+        height: 62px;
+        border: 0;
+        text-align: right;
+        border-radius: 14px;
+        background: #eef7ff;
+        padding: 0 10px;
+        font-size: 30px;
+        color: #1b3d63;
+        outline: 0;
+        margin-bottom: 10px;
+      }
+
+      .calc-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .calc-key {
+        height: 48px;
+        border: 0;
+        border-radius: 13px;
+        background: rgba(255, 255, 255, 0.92);
+        color: #19476f;
+        font-size: 18px;
+        box-shadow: 0 6px 12px rgba(6, 60, 109, 0.08);
+      }
+
+      .calc-key.op {
+        background: linear-gradient(180deg, #49abff, #2d83ec);
+        color: #fff;
+      }
+
+      .editor-wrap {
+        background: rgba(255, 255, 255, 0.82);
+        border-radius: 18px;
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.76);
+        box-shadow: 0 10px 20px rgba(9, 62, 112, 0.12);
+      }
+
+      .editor-wrap input,
+      .editor-wrap textarea {
+        width: 100%;
+        border: 0;
+        border-radius: 10px;
+        background: #edf7ff;
+        color: #1c4166;
+        outline: 0;
+        font-size: 13px;
+        padding: 10px;
+        margin-bottom: 8px;
+      }
+
+      .editor-wrap textarea {
+        height: 320px;
+        resize: none;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .camera-wrap {
+        display: grid;
+        gap: 10px;
+      }
+
+      .camera-preview {
+        width: 100%;
+        height: 440px;
+        border-radius: 20px;
+        background: #102339;
+        object-fit: cover;
+      }
+
+      .camera-canvas {
+        display: none;
+      }
+
+      .camera-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+      }
+
+      .capture-btn {
+        width: 74px;
+        height: 74px;
+        border-radius: 50%;
+        border: 5px solid #e9f6ff;
+        background: linear-gradient(180deg, #ffffff, #d4e9f9);
+        box-shadow: 0 8px 16px rgba(6, 60, 112, 0.18);
+      }
+
+      #ControlPanel,
+      #NotificationCenter,
+      #ServiceCenter {
+        z-index: var(--z-overlays);
+        background: rgba(12, 32, 62, 0.26);
+        backdrop-filter: blur(14px);
+        padding-top: 52px;
+      }
+
+      .overlay-panel {
+        margin: 0 10px;
+        border-radius: 26px;
+        background: linear-gradient(
+          180deg,
+          rgba(225, 244, 255, 0.95),
+          rgba(181, 224, 255, 0.94)
+        );
+        border: 1px solid rgba(255, 255, 255, 0.66);
+        padding: 12px;
+        box-shadow: 0 16px 30px rgba(6, 55, 106, 0.32);
+        max-height: 760px;
+        overflow: auto;
+        transform-origin: top center;
+        animation: pull-down 280ms cubic-bezier(0.21, 0.88, 0.28, 1.2);
+      }
+
+      .overlay-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        font-weight: 700;
+        color: #18466d;
+      }
+
+      .close-overlay {
+        width: 30px;
+        height: 30px;
+        border: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.8);
+        color: #18466d;
+        font-size: 18px;
+      }
+
+      .quick-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .quick-btn {
+        height: 58px;
+        border: 0;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.84);
+        color: #23537e;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .quick-btn.active {
+        background: linear-gradient(180deg, #42a8ff, #1574e8);
+        color: #fff;
+      }
+
+      .media-card {
+        border-radius: 18px;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.84);
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #21486b;
+        font-size: 13px;
+      }
+
+      .volume-bar {
+        width: 100%;
+        margin: 8px 0 12px;
+        accent-color: #2388f4;
+      }
+
+      .super-device {
+        position: relative;
+        border-radius: 20px;
+        min-height: 240px;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.86),
+          rgba(210, 236, 255, 0.8)
+        );
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        overflow: hidden;
+        padding: 10px;
+      }
+
+      .device-center {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 94px;
+        height: 94px;
+        border-radius: 50%;
+        background: linear-gradient(180deg, #4dafff, #1c7be9);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        font-size: 13px;
+        box-shadow: 0 10px 18px rgba(24, 110, 190, 0.35);
+        text-align: center;
+      }
+
+      .device-bubble {
+        position: absolute;
+        width: 84px;
+        height: 84px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.85);
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+        color: #1f4e77;
+        text-align: center;
+        box-shadow: 0 6px 14px rgba(12, 70, 132, 0.18);
+        touch-action: none;
+      }
+
+      .device-bubble.connected {
+        background: linear-gradient(180deg, #64bcff, #2d8def);
+        color: white;
+      }
+
+      .device-status {
+        margin-top: 12px;
+        font-size: 12px;
+        color: #356185;
+      }
+
+      #NotificationCenter .notice-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .notice-item {
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.75);
+        padding: 10px;
+        font-size: 13px;
+        color: #274f72;
+      }
+
+      #ServiceCenter .overlay-panel {
+        margin-top: 140px;
+        transform-origin: bottom center;
+        animation: service-rise 320ms cubic-bezier(0.2, 0.88, 0.28, 1);
+      }
+
+      #SheetLayer {
+        z-index: var(--z-sheet);
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 8px;
+        display: grid;
+        place-items: end center;
+        pointer-events: none;
+      }
+
+      .sheet {
+        min-width: 250px;
+        max-width: 340px;
+        border-radius: 18px;
+        background: rgba(247, 252, 255, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow: 0 14px 24px rgba(4, 46, 90, 0.22);
+        padding: 12px 14px;
+        font-size: 13px;
+        color: #1f4568;
+        margin-bottom: 8px;
+        animation: sheet-in 360ms cubic-bezier(0.2, 0.88, 0.3, 1.15);
+        pointer-events: auto;
+      }
+
+      #DialogLayer {
+        z-index: calc(var(--z-sheet) + 1);
+        position: absolute;
+        inset: 0;
+        display: none;
+        place-items: center;
+        background: rgba(8, 27, 49, 0.42);
+        backdrop-filter: blur(6px);
+        padding: 16px;
+      }
+
+      #DialogLayer.active {
+        display: grid;
+      }
+
+      .dialog-card {
+        width: 100%;
+        max-width: 320px;
+        border-radius: 18px;
+        background: rgba(248, 253, 255, 0.98);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow: 0 16px 26px rgba(5, 43, 83, 0.28);
+        padding: 12px;
+      }
+
+      .dialog-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #20496d;
+      }
+
+      .dialog-msg {
+        margin-top: 6px;
+        font-size: 13px;
+        color: #3a5f82;
+        line-height: 1.45;
+      }
+
+      .dialog-input {
+        width: 100%;
+        border: 0;
+        border-radius: 10px;
+        background: #eaf5ff;
+        color: #1f466a;
+        padding: 9px 10px;
+        margin-top: 10px;
+        outline: 0;
+      }
+
+      .dialog-actions {
+        margin-top: 12px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .dialog-btn {
+        border: 0;
+        min-width: 66px;
+        height: 32px;
+        border-radius: 9px;
+        font-size: 12px;
+        padding: 0 10px;
+      }
+
+      .dialog-btn.cancel {
+        background: #e0ecf8;
+        color: #31587f;
+      }
+
+      .dialog-btn.ok {
+        background: #2f94f9;
+        color: #fff;
+      }
+
+      .dialog-btn.ok.danger {
+        background: #df4b4b;
+      }
+
+      #Keyboard {
+        z-index: var(--z-keyboard);
+        position: absolute;
+        left: 6px;
+        right: 6px;
+        bottom: 6px;
+        border-radius: 18px;
+        background: linear-gradient(
+          180deg,
+          rgba(248, 251, 255, 0.97),
+          rgba(230, 238, 248, 0.98)
+        );
+        border: 1px solid rgba(255, 255, 255, 0.86);
+        padding: 8px;
+        display: none;
+        box-shadow: 0 12px 26px rgba(0, 37, 78, 0.3);
+      }
+
+      #Keyboard.active {
+        display: block;
+        animation: keyboard-up 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      .key-row {
+        display: grid;
+        gap: 6px;
+        margin-bottom: 6px;
+        grid-template-columns: repeat(10, minmax(0, 1fr));
+      }
+
+      .key {
+        border: 0;
+        height: 34px;
+        border-radius: 9px;
+        background: #fff;
+        color: #2b4e72;
+        font-size: 14px;
+        box-shadow: 0 3px 7px rgba(16, 57, 96, 0.15);
+      }
+
+      .key.control {
+        background: #dfe7f0;
+        font-size: 12px;
+      }
+
+      .key.space {
+        grid-column: span 5;
+      }
+
+      #TaskSwitcher {
+        position: absolute;
+        inset: 0;
+        z-index: calc(var(--z-app) + 2);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(16, 41, 73, 0.38);
+        backdrop-filter: blur(8px);
+      }
+
+      #TaskSwitcher.active {
+        display: flex;
+      }
+
+      .task-card {
+        width: 80%;
+        height: 72%;
+        border-radius: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        background: rgba(255, 255, 255, 0.68);
+        box-shadow: 0 12px 24px rgba(2, 39, 76, 0.3);
+        overflow: hidden;
+        position: relative;
+        transform: scale(0.9);
+        animation: task-in 220ms ease forwards;
+      }
+
+      .task-title {
+        height: 40px;
+        padding: 10px 12px;
+        font-size: 12px;
+        color: #2a5177;
+        background: rgba(238, 248, 255, 0.72);
+      }
+
+      .task-snapshot {
+        height: calc(100% - 40px);
+        display: grid;
+        place-items: center;
+        color: #3e6285;
+        font-size: 14px;
+      }
+
+      @keyframes app-in {
+        from {
+          transform: translateY(22px) scale(0.98);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0) scale(1);
+          opacity: 1;
+        }
+      }
+
+      @keyframes pull-down {
+        from {
+          transform: translateY(-32px) scale(0.98);
+          opacity: 0.3;
+        }
+        to {
+          transform: translateY(0) scale(1);
+          opacity: 1;
+        }
+      }
+
+      @keyframes service-rise {
+        from {
+          transform: translateY(34px) scale(0.97);
+          opacity: 0.4;
+        }
+        to {
+          transform: translateY(0) scale(1);
+          opacity: 1;
+        }
+      }
+
+      @keyframes sheet-in {
+        0% {
+          transform: translateY(100px);
+          opacity: 0;
+        }
+        62% {
+          transform: translateY(-8px);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes keyboard-up {
+        from {
+          transform: translateY(34px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes spring-in {
+        0% {
+          transform: scale(0.75);
+          opacity: 0.2;
+        }
+        68% {
+          transform: scale(1.05);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      @keyframes task-in {
+        from {
+          transform: scale(0.75);
+          opacity: 0;
+        }
+        to {
+          transform: scale(0.9);
+          opacity: 1;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .device-shell {
+          transform: scale(0.95);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="device-shell">
+      <div class="phone" id="Phone">
+        <div class="camera-hole"></div>
+        <div id="Wallpaper"></div>
+
+        <section id="LockScreen" class="layer active">
+          <div class="status-bar">
+            <div id="lockStatusTime">08:08</div>
+            <div class="status-right">
+              <span class="signal"></span><span class="wifi"></span
+              ><span class="battery"></span>
+            </div>
+          </div>
+          <div class="lock-center">
+            <div class="lock-time" id="lockTime">08:08</div>
+            <div class="lock-date" id="lockDate">2月6日 星期五</div>
+          </div>
+          <div class="lock-card">
+            <span>系统提示</span>
+            <span>左上角下滑通知 · 右上角下滑控制中心</span>
+          </div>
+          <div
+            style="
+              margin-top: 8px;
+              text-align: center;
+              font-size: 11px;
+              opacity: 0.82;
+            "
+            id="buildId"
+          >
+            Build: HOS-WEB-20260206-3
+          </div>
+          <div class="unlock-tip">
+            <div class="unlock-bar"></div>
+            上滑解锁
+          </div>
+        </section>
+
+        <section id="HomeScreen" class="layer">
+          <div class="status-bar">
+            <div id="homeTime">08:08</div>
+            <div class="status-right">
+              <span class="signal"></span><span class="wifi"></span
+              ><span class="battery"></span>
+            </div>
+          </div>
+          <div class="home-search">
+            <span class="search-dot"></span>
+            <input
+              id="homeSearch"
+              class="search-input needs-keyboard"
+              placeholder="搜索应用、服务、设置"
+            />
+          </div>
+          <div id="homeSearchResults" class="home-search-results"></div>
+          <div class="desktop-grid" id="desktopGrid">
+            <div class="widget-weather card">
+              <div class="weather-top">今天 · 深圳</div>
+              <div class="weather-temp">26°</div>
+              <div class="weather-meta">多云转晴 · 空气优 · 紫外线中等</div>
+            </div>
+
+            <div class="large-folder card">
+              <div>
+                <div style="font-size: 13px; font-weight: 700; color: #214969">
+                  工具
+                </div>
+                <div class="folder-grid">
+                  <button class="mini-app mini-violet" data-app-open="calculator" aria-label="计算器" title="计算器">
+                    <span class="mini-icon"><i data-lucide="calculator"></i></span>
+                  </button>
+                  <button class="mini-app" data-app-open="files" aria-label="文件" title="文件">
+                    <span class="mini-icon"><i data-lucide="folder-open"></i></span>
+                  </button>
+                  <button class="mini-app mini-green" data-app-open="editor" aria-label="文档" title="文档">
+                    <span class="mini-icon"><i data-lucide="file-text"></i></span>
+                  </button>
+                  <button class="mini-app mini-orange" data-app-open="camera" aria-label="相机" title="相机">
+                    <span class="mini-icon"><i data-lucide="camera"></i></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="widget-steps card">
+              <div>
+                <div style="font-size: 12px; color: #3c6387">健康</div>
+                <div style="font-size: 25px; font-weight: 700; color: #184166">
+                  3218 步
+                </div>
+              </div>
+              <div class="steps-pill"></div>
+            </div>
+
+            <div class="app-icon-wrap" data-widget-target="weatherMorph">
+              <button class="app-icon app-cyan" data-app-open="servicecenter">
+                <span class="glyph"><i data-lucide="layout-grid"></i></span>
+              </button>
+              <div class="snippet-bar"></div>
+              <div class="icon-title">服务中心</div>
+            </div>
+
+            <div class="app-icon-wrap" data-widget-target="galleryMorph">
+              <button class="app-icon app-orange" data-app-open="gallery">
+                <span class="glyph"><i data-lucide="images"></i></span>
+              </button>
+              <div class="snippet-bar"></div>
+              <div class="icon-title">图库</div>
+            </div>
+
+            <div class="app-icon-wrap">
+              <button class="app-icon app-green" data-app-open="meetime">
+                <span class="glyph"><i data-lucide="phone-call"></i></span>
+              </button>
+              <div class="icon-title">MeeTime</div>
+            </div>
+
+            <div class="app-icon-wrap">
+              <button class="app-icon app-violet" data-app-open="settings">
+                <span class="glyph"><i data-lucide="settings"></i></span>
+              </button>
+              <div class="icon-title">设置</div>
+            </div>
+
+            <div class="morph-widget card" id="weatherMorph">
+              <h4>天气服务卡片</h4>
+              <p>体感 27°，湿度 63%，建议穿着轻薄外套。</p>
+              <p>上滑图标可瞬时呼出万能卡片。</p>
+            </div>
+
+            <div class="morph-widget card" id="galleryMorph">
+              <h4>图库服务卡片</h4>
+              <p>最近 24 小时新增 18 张照片。</p>
+              <p>点击可快速进入最近时刻。</p>
+            </div>
+
+            <div class="app-icon-wrap">
+              <button class="app-icon app-green" data-app-open="phone">
+                <span class="glyph"><i data-lucide="phone"></i></span>
+              </button>
+              <div class="icon-title">电话</div>
+            </div>
+
+            <div class="app-icon-wrap">
+              <button class="app-icon" data-app-open="messages">
+                <span class="glyph"><i data-lucide="message-circle"></i></span>
+              </button>
+              <div class="icon-title">信息/邮件</div>
+            </div>
+
+            <div class="app-icon-wrap">
+              <button class="app-icon app-cyan" data-app-open="browser">
+                <span class="glyph"><i data-lucide="globe"></i></span>
+              </button>
+              <div class="icon-title">浏览器</div>
+            </div>
+          </div>
+
+          <div class="dock">
+            <div class="app-icon-wrap">
+              <button class="app-icon app-green" data-app-open="phone">
+                <span class="glyph"><i data-lucide="phone"></i></span>
+              </button>
+            </div>
+            <div class="app-icon-wrap">
+              <button class="app-icon" data-app-open="messages">
+                <span class="glyph"><i data-lucide="message-circle"></i></span>
+              </button>
+            </div>
+            <div class="app-icon-wrap">
+              <button class="app-icon app-cyan" data-app-open="browser">
+                <span class="glyph"><i data-lucide="globe"></i></span>
+              </button>
+            </div>
+            <div class="app-icon-wrap">
+              <button class="app-icon app-orange" data-app-open="camera">
+                <span class="glyph"><i data-lucide="camera"></i></span>
+              </button>
+            </div>
+          </div>
+          <div class="home-indicator"></div>
+        </section>
+
+        <section id="AppContainer" class="layer">
+          <div id="TaskSwitcher">
+            <div class="task-card">
+              <div class="task-title" id="taskTitle">最近任务</div>
+              <div class="task-snapshot" id="taskSnapshot">
+                上滑返回桌面，停顿进入此视图
+              </div>
+            </div>
+          </div>
+
+          <article class="app-page" id="app-settings">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              设置
+            </div>
+            <div class="app-body">
+              <div class="setting-account">
+                <div class="avatar"></div>
+                <div>
+                  <div style="font-size: 17px; font-weight: 650">华为账号</div>
+                  <div style="font-size: 13px; opacity: 0.92">
+                    已登录 · HUAWEI ID
+                  </div>
+                </div>
+              </div>
+
+              <div class="list-card">
+                <div class="row">
+                  <span>超级终端</span
+                  ><button
+                    class="switch on setting-switch"
+                    data-key="super"
+                  ></button>
+                </div>
+                <div class="row">
+                  <span>华为分享 Huawei Share</span
+                  ><button
+                    class="switch setting-switch"
+                    data-key="share"
+                  ></button>
+                </div>
+                <div class="row">
+                  <span>显示和亮度</span><span class="sub">自动</span>
+                </div>
+                <div class="row">
+                  <div style="flex: 1">
+                    <div>亮度</div>
+                    <input
+                      class="slider"
+                      id="brightnessSlider"
+                      type="range"
+                      min="20"
+                      max="100"
+                      value="72"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="list-card">
+                <div class="row"><span>关于手机</span></div>
+                <div class="row">
+                  <span class="sub">HarmonyOS 版本: 4.0.0</span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="app-page" id="app-gallery">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              图库 · 时刻
+            </div>
+            <div class="app-body">
+              <div class="moment-grid" id="momentGrid"></div>
+            </div>
+            <div class="photo-viewer" id="photoViewer">
+              <button class="viewer-close" id="closeViewer">×</button>
+              <div class="viewer-img" id="viewerImg"></div>
+            </div>
+          </article>
+
+          <article class="app-page" id="app-servicecenter">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              服务中心
+            </div>
+            <div class="app-body">
+              <div class="service-cards" id="serviceCardsApp">
+                <div class="service-card">
+                  <div style="font-weight: 650">快递服务</div>
+                  <div class="sub">3 个包裹运输中 · 实时状态卡片</div>
+                  <button data-add-service="快递">添加到桌面</button>
+                </div>
+                <div class="service-card">
+                  <div style="font-weight: 650">今日日程</div>
+                  <div class="sub">14:00 项目评审 · 18:30 健身</div>
+                  <button data-add-service="日程">添加到桌面</button>
+                </div>
+                <div class="service-card">
+                  <div style="font-weight: 650">小艺建议</div>
+                  <div class="sub">推荐通勤路线与天气提醒</div>
+                  <button data-add-service="建议">添加到桌面</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="app-page" id="app-meetime">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              MeeTime 畅连
+            </div>
+            <div class="app-body">
+              <div class="meetime-bg">
+                <div class="meetime-avatar"></div>
+                <div class="meetime-label">陈晨</div>
+                <div class="secure">正在加密通话</div>
+              </div>
+              <div class="dial-actions" style="margin-top: 14px">
+                <button class="btn btn-call" id="meetimeCall">拨打</button>
+                <button class="btn btn-hang" id="meetimeHang">挂断</button>
+              </div>
+              <div class="call-status" id="meetimeStatus">待呼叫</div>
+            </div>
+          </article>
+
+          <article class="app-page" id="app-phone">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              电话
+            </div>
+            <div class="app-body">
+              <div class="dialer">
+                <input
+                  id="dialInput"
+                  class="dial-input needs-keyboard"
+                  placeholder="请输入号码"
+                />
+                <div class="dial-pad" id="dialPad"></div>
+                <div class="dial-actions">
+                  <button class="btn btn-call" id="callBtn">拨号</button>
+                  <button class="btn btn-hang" id="hangBtn">挂断</button>
+                </div>
+                <div class="call-status" id="callStatus">空闲</div>
+              </div>
+            </div>
+          </article>
+
+          <article class="app-page" id="app-files">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              文件
+            </div>
+            <div class="app-body files-shell">
+              <div class="path" id="filePath">/我的文件</div>
+              <div class="file-actions">
+                <button class="tiny-btn" id="newFolderBtn">新建文件夹</button>
+                <button class="tiny-btn" id="newFileBtn">新建文件</button>
+                <button class="tiny-btn" id="upFolderBtn">返回上级</button>
+              </div>
+              <div class="file-list" id="fileList"></div>
+            </div>
+          </article>
+
+          <article class="app-page" id="app-browser">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              浏览器
+            </div>
+            <div class="app-body browser-box">
+              <div class="url-row">
+                <input
+                  id="urlInput"
+                  class="url-input needs-keyboard"
+                  value="https://zh.wikipedia.org/wiki/Wikipedia:%E9%A6%96%E9%A1%B5"
+                />
+                <button class="tiny-btn" id="openUrlBtn">打开</button>
+                <button class="tiny-btn" id="openExternalBtn">新标签</button>
+              </div>
+              <div class="sub" id="browserStatus">默认网址为 Wiki 百科，可输入 www.baidu.com</div>
+              <iframe id="webFrame" class="web-frame" title="网页"></iframe>
+            </div>
+          </article>
+
+          <article class="app-page" id="app-camera">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              相机
+            </div>
+            <div class="app-body camera-wrap">
+              <video
+                id="cameraVideo"
+                class="camera-preview"
+                autoplay
+                muted
+                playsinline
+              ></video>
+              <canvas id="cameraCanvas" class="camera-canvas"></canvas>
+              <div class="camera-actions">
+                <button class="capture-btn" id="captureBtn"></button>
+              </div>
+              <div class="call-status" id="cameraStatus">准备就绪</div>
+            </div>
+          </article>
+
+          <article class="app-page" id="app-messages">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              信息 / 邮件
+            </div>
+            <div class="app-body">
+              <div class="message-filters">
+                <button class="filter-pill active" data-mail-filter="all">全部</button>
+                <button class="filter-pill" data-mail-filter="短信">短信</button>
+                <button class="filter-pill" data-mail-filter="邮件">邮件</button>
+              </div>
+              <div class="messages-wrap">
+                <div class="mail-list" id="mailList"></div>
+                <div class="mail-detail" id="mailDetail">
+                  选择一条消息查看详情
+                </div>
+              </div>
+              <input
+                id="msgInput"
+                class="url-input needs-keyboard"
+                style="margin-top: 8px"
+                placeholder="回复..."
+              />
+            </div>
+          </article>
+
+          <article class="app-page" id="app-calculator">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              计算器
+            </div>
+            <div class="app-body">
+              <div class="calc">
+                <input
+                  id="calcDisplay"
+                  class="calc-display"
+                  value="0"
+                  readonly
+                />
+                <div class="calc-grid" id="calcGrid"></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="app-page" id="app-editor">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              文本编辑器
+            </div>
+            <div class="app-body">
+              <div class="editor-wrap">
+                <input
+                  id="editorName"
+                  class="needs-keyboard"
+                  value="note.txt"
+                  placeholder="文件名"
+                />
+                <textarea
+                  id="editorContent"
+                  class="needs-keyboard"
+                  placeholder="开始编写内容..."
+                ></textarea>
+                <div class="file-actions">
+                  <button class="tiny-btn" id="saveEditorBtn">保存</button>
+                  <span id="editorStatus" class="sub"></span>
+                </div>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section id="ControlPanel" class="layer">
+          <div class="overlay-panel">
+            <div class="overlay-header">
+              <span>控制中心</span>
+              <button class="close-overlay" data-close-overlay="ControlPanel">
+                ×
+              </button>
+            </div>
+            <div class="quick-grid">
+              <button class="quick-btn active" data-toggle-quick>Wi-Fi</button>
+              <button class="quick-btn active" data-toggle-quick>蓝牙</button>
+              <button class="quick-btn" data-toggle-quick>移动网络</button>
+              <button class="quick-btn" data-toggle-quick>手电筒</button>
+              <button class="quick-btn" data-toggle-quick>免打扰</button>
+              <button class="quick-btn active" data-toggle-quick>定位</button>
+            </div>
+            <div class="media-card">
+              <span>媒体播控</span>
+              <span>未在播放</span>
+            </div>
+            <input
+              class="volume-bar"
+              type="range"
+              min="0"
+              max="100"
+              value="68"
+            />
+            <div class="super-device" id="superDevice">
+              <div class="device-center" id="centerDevice">本机<br />手机</div>
+              <div
+                class="device-bubble"
+                data-device="智慧屏"
+                style="left: 12px; top: 18px"
+              >
+                智慧屏
+              </div>
+              <div
+                class="device-bubble"
+                data-device="MatePad"
+                style="right: 10px; top: 24px"
+              >
+                MatePad
+              </div>
+              <div
+                class="device-bubble"
+                data-device="FreeBuds"
+                style="left: 14px; bottom: 16px"
+              >
+                FreeBuds
+              </div>
+              <div
+                class="device-bubble"
+                data-device="Sound X"
+                style="right: 10px; bottom: 18px"
+              >
+                Sound X
+              </div>
+            </div>
+            <div class="device-status" id="deviceStatus">
+              拖拽设备气泡到中央手机，模拟协同连接。
+            </div>
+          </div>
+        </section>
+
+        <section id="NotificationCenter" class="layer">
+          <div class="overlay-panel">
+            <div class="overlay-header">
+              <span>通知中心</span>
+              <button
+                class="close-overlay"
+                data-close-overlay="NotificationCenter"
+              >
+                ×
+              </button>
+            </div>
+            <div class="notice-list">
+              <div class="notice-item">
+                <div style="font-weight: 650">系统提醒</div>
+                <div>HarmonyOS 体验模式运行中。</div>
+              </div>
+              <div class="notice-item">
+                <div style="font-weight: 650">天气</div>
+                <div>未来 2 小时有阵雨，请携带雨具。</div>
+              </div>
+              <div class="notice-item">
+                <div style="font-weight: 650">服务中心</div>
+                <div>可从左下角或右下角斜向上滑呼出。</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="ServiceCenter" class="layer">
+          <div class="overlay-panel">
+            <div class="overlay-header">
+              <span>服务中心</span>
+              <button class="close-overlay" data-close-overlay="ServiceCenter">
+                ×
+              </button>
+            </div>
+            <div class="service-cards" id="serviceCardsOverlay">
+              <div class="service-card">
+                <div style="font-weight: 650">快递提醒</div>
+                <div class="sub">您的包裹已到达转运中心。</div>
+                <button data-add-service="快递">添加到桌面</button>
+              </div>
+              <div class="service-card">
+                <div style="font-weight: 650">出行建议</div>
+                <div class="sub">通勤 32 分钟，建议提前 10 分钟出发。</div>
+                <button data-add-service="出行">添加到桌面</button>
+              </div>
+              <div class="service-card">
+                <div style="font-weight: 650">健身打卡</div>
+                <div class="sub">今日目标 6500 步，已完成 3218 步。</div>
+                <button data-add-service="健身">添加到桌面</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="SheetLayer"></section>
+        <section id="DialogLayer"></section>
+        <section id="Keyboard"></section>
+      </div>
+    </div>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"
+      onerror="
+        this.onerror = null;
+        this.src = 'https://unpkg.com/lucide@latest';
+      "
+    ></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,2541 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ubuntu 网页系统</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&family=Ubuntu+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <style>
+      :root {
+        --ubuntu-orange: #e95420;
+        --ubuntu-bg-gradient-start: #772953;
+        --ubuntu-bg-gradient-end: #2c001e;
+        --top-bar-height: 27px;
+        --dock-width: 58px;
+        --window-header-height: 38px;
+        --text-color: #333;
+        --window-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      }
+
+      * {
+        box-sizing: border-box;
+        user-select: none;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        font-family: "Ubuntu", sans-serif;
+        background: linear-gradient(
+          135deg,
+          var(--ubuntu-bg-gradient-start),
+          var(--ubuntu-bg-gradient-end)
+        );
+        color: white;
+      }
+
+      /* Top Bar */
+      #top-bar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: var(--top-bar-height);
+        background-color: #1d1d1d;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        z-index: 10000;
+        font-size: 14px;
+      }
+
+      .top-bar-left {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        font-weight: 400;
+      }
+
+      .top-bar-right {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      /* Dock */
+      #dock {
+        position: absolute;
+        top: var(--top-bar-height);
+        left: 0;
+        bottom: 0;
+        width: var(--dock-width);
+        background-color: rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 10px;
+        z-index: 9999;
+      }
+
+      .dock-item {
+        width: 44px;
+        height: 44px;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        position: relative;
+        transition: background-color 0.2s;
+      }
+
+      .dock-item:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .dock-item i {
+        font-size: 24px;
+        color: #f0f0f0;
+      }
+
+      .dock-item.running::before {
+        content: "";
+        position: absolute;
+        left: -4px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 4px;
+        height: 4px;
+        background-color: var(--ubuntu-orange);
+        border-radius: 50%;
+      }
+
+      .dock-item.active::before {
+        height: 20px;
+        border-radius: 2px;
+      }
+
+      .dock-tooltip {
+        position: absolute;
+        left: 55px;
+        background: #222;
+        color: #fff;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+      }
+
+      .dock-item:hover .dock-tooltip {
+        opacity: 1;
+      }
+
+      /* Desktop */
+      #desktop {
+        position: absolute;
+        top: var(--top-bar-height);
+        left: var(--dock-width);
+        right: 0;
+        bottom: 0;
+        overflow: hidden;
+      }
+
+      /* Desktop Icons */
+      .desktop-icon-container {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        z-index: 50; /* Below windows */
+      }
+
+      .desktop-icon {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 80px;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        color: white;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+      }
+
+      .desktop-icon:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .desktop-icon i {
+        font-size: 32px;
+        margin-bottom: 5px;
+        color: #e95420;
+      }
+
+      .desktop-icon.file i {
+        color: #f0f0f0;
+      }
+
+      .desktop-icon-name {
+        font-size: 13px;
+        text-align: center;
+        line-height: 1.2;
+        word-wrap: break-word;
+      }
+
+      /* Window System */
+      .window {
+        position: absolute;
+        background-color: #fafafa;
+        border-radius: 8px 8px 0 0;
+        box-shadow: var(--window-shadow);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        min-width: 300px;
+        min-height: 200px;
+        resize: both;
+        z-index: 100;
+      }
+
+      .window-header {
+        height: var(--window-header-height);
+        background: linear-gradient(to bottom, #4c4c4c, #3b3b3b);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 10px;
+        cursor: default;
+        color: #dfdfdf;
+      }
+
+      .window-title {
+        font-size: 14px;
+        font-weight: 500;
+        flex-grow: 1;
+        text-align: center;
+        pointer-events: none;
+      }
+
+      .window-controls {
+        display: flex;
+        gap: 8px;
+      }
+
+      .window-control {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 10px;
+        cursor: pointer;
+        color: rgba(0, 0, 0, 0.5);
+        font-weight: bold;
+      }
+
+      .win-close {
+        background-color: #e95420;
+      }
+      .win-minimize {
+        background-color: #dedede;
+      } /* Normally minimized in ubuntu isn't strictly a color like mac, but let's assume close button is key */
+      .win-maximize {
+        background-color: #dedede;
+      }
+
+      .window-content {
+        flex-grow: 1;
+        background-color: white;
+        color: var(--text-color);
+        position: relative;
+        overflow: auto;
+        user-select: text;
+      }
+
+      /* Paint App Specific Customizations */
+      .window.app-paint .window-header {
+        padding-top: 8px;
+        padding-bottom: 8px;
+        height: auto; /* Allow height to grow with padding */
+      }
+
+      /* App Specific Styles */
+      /* Terminal */
+      .term-body {
+        background-color: #300a24;
+        color: white;
+        font-family: "Ubuntu Mono", monospace;
+        padding: 10px;
+        height: 100%;
+        font-size: 14px;
+      }
+      .term-output {
+        white-space: pre-wrap;
+        margin-bottom: 10px;
+      }
+      .term-input-line {
+        display: flex;
+      }
+      .term-prompt {
+        color: #8ae234;
+        margin-right: 8px;
+      }
+      .term-input {
+        background: transparent;
+        border: none;
+        color: white;
+        font-family: inherit;
+        font-size: inherit;
+        flex-grow: 1;
+        outline: none;
+      }
+
+      /* Text Editor */
+      .text-editor-area {
+        width: 100%;
+        height: 100%;
+        border: none;
+        padding: 10px;
+        font-family: "Ubuntu Mono", monospace;
+        resize: none;
+        outline: none;
+        font-size: 14px;
+      }
+      .editor-toolbar {
+        background: #f0f0f0;
+        padding: 5px;
+        border-bottom: 1px solid #ccc;
+        display: flex;
+        gap: 10px;
+      }
+      .editor-btn {
+        border: 1px solid #ccc;
+        background: #fff;
+        padding: 2px 8px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .editor-btn:hover {
+        background: #e0e0e0;
+      }
+
+      /* Calculator */
+      .calc-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1px;
+        background: #ccc;
+        height: 100%;
+      }
+      .calc-display {
+        grid-column: span 4;
+        background: #fff;
+        padding: 15px;
+        text-align: right;
+        font-size: 24px;
+        border-bottom: 1px solid #ccc;
+      }
+      .calc-btn {
+        background: #f9f9f9;
+        border: none;
+        font-size: 18px;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .calc-btn:hover {
+        background: #eee;
+      }
+      .calc-btn.op {
+        background: #f2f2f2;
+        color: var(--ubuntu-orange);
+      }
+      .calc-btn.eq {
+        background: var(--ubuntu-orange);
+        color: white;
+      }
+
+      /* File Browser */
+      .file-browser-view {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      .fb-toolbar {
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        gap: 10px;
+      }
+      .fb-grid {
+        padding: 15px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 15px;
+        align-content: start;
+      }
+      .fb-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+      }
+      .fb-item:hover {
+        background-color: rgba(233, 84, 32, 0.1);
+      }
+      .fb-item i {
+        font-size: 32px;
+        margin-bottom: 5px;
+      }
+      .fb-item.folder i {
+        color: #e95420;
+      }
+      .fb-item.file i {
+        color: #888;
+      }
+      .fb-item-name {
+        font-size: 12px;
+        text-align: center;
+        word-break: break-all;
+      }
+
+      /* Code Editor */
+      .code-split {
+        display: flex;
+        height: 100%;
+        flex-direction: column;
+      }
+      .code-editor-container {
+        position: relative;
+        flex: 2;
+        background: #282c34;
+        overflow: hidden;
+      }
+      .code-area,
+      .code-highlight {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        padding: 10px;
+        font-family: "Ubuntu Mono", monospace;
+        font-size: 14px;
+        line-height: 1.5;
+        border: none;
+        margin: 0;
+        box-sizing: border-box;
+        background: transparent;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        overflow: auto;
+      }
+      .code-highlight {
+        color: #abb2bf;
+        pointer-events: none;
+        z-index: 1;
+      }
+      .code-area {
+        color: transparent;
+        caret-color: white;
+        z-index: 2;
+        resize: none;
+        outline: none;
+      }
+      /* Syntax Colors */
+      .token-keyword {
+        color: #c678dd;
+        font-weight: bold;
+      }
+      .token-string {
+        color: #98c379;
+      }
+      .token-comment {
+        color: #5c6370;
+        font-style: italic;
+      }
+      .token-number {
+        color: #d19a66;
+      }
+      .token-bracket {
+        color: #e06c75;
+      }
+
+      .code-output {
+        flex: 1;
+        background: #1e1e1e;
+        color: #fff;
+        padding: 10px;
+        border-top: 1px solid #444;
+        font-family: "Ubuntu Mono";
+        overflow: auto;
+      }
+
+      /* Browser */
+      .browser-bar {
+        display: flex;
+        padding: 5px;
+        background: #ddd;
+        gap: 5px;
+      }
+      .browser-url {
+        flex-grow: 1;
+        padding: 2px 5px;
+        border: 1px solid #bbb;
+        border-radius: 3px;
+      }
+      .browser-frame {
+        flex-grow: 1;
+        width: 100%;
+        border: none;
+        background: white;
+      }
+
+      /* Paint */
+      .paint-toolbar {
+        padding: 5px;
+        background: #ddd;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .paint-canvas-container {
+        flex-grow: 1;
+        position: relative;
+        overflow: hidden;
+        background: #fff;
+        cursor: crosshair;
+      }
+
+      /* Calendar */
+      .calendar-app {
+        padding: 10px;
+      }
+      .cal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 5px;
+        text-align: center;
+        font-size: 14px;
+      }
+      .cal-day-header {
+        font-weight: bold;
+        color: #888;
+        padding: 5px 0;
+      }
+      .cal-day {
+        padding: 8px 0;
+        cursor: pointer;
+        border-radius: 5px;
+      }
+      .cal-day:hover {
+        background: #eee;
+      }
+      .cal-day.today {
+        color: var(--ubuntu-orange);
+        font-weight: bold;
+      }
+      .cal-day.selected {
+        background: var(--ubuntu-orange);
+        color: white;
+      }
+      .cal-day.empty {
+        pointer-events: none;
+      }
+
+      /* Photo Viewer */
+      .photo-gallery {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 10px;
+      }
+      .photo-thumb {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        cursor: pointer;
+        border: 2px solid white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+      .photo-preview {
+        display: none;
+        position: absolute;
+        inset: 0;
+        background: black;
+        flex-direction: column;
+      }
+      .photo-preview.active {
+        display: flex;
+      }
+      .photo-preview img {
+        flex-grow: 1;
+        object-fit: contain;
+      }
+      .photo-toolbar {
+        background: rgba(0, 0, 0, 0.5);
+        padding: 10px;
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+      }
+      .photo-btn {
+        color: white;
+        background: none;
+        border: 1px solid white;
+        padding: 5px 15px;
+        cursor: pointer;
+      }
+
+      /* Game (Tic-Tac-Toe) */
+      .game-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        gap: 20px;
+      }
+      .game-board {
+        display: grid;
+        grid-template-columns: repeat(3, 80px);
+        gap: 5px;
+      }
+      .game-cell {
+        width: 80px;
+        height: 80px;
+        background: #eee;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 40px;
+        cursor: pointer;
+        font-weight: bold;
+        color: #333;
+      }
+      .game-cell:hover {
+        background: #e0e0e0;
+      }
+      .game-status {
+        font-size: 18px;
+        font-weight: bold;
+      }
+      .game-score {
+        margin-top: 10px;
+        font-size: 14px;
+        color: #555;
+      }
+
+      /* Misc */
+      .context-menu {
+        position: absolute;
+        background: white;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+        padding: 5px 0;
+        z-index: 99999;
+        min-width: 150px;
+        display: none;
+      }
+      .context-item {
+        padding: 8px 15px;
+        cursor: pointer;
+        font-size: 14px;
+        color: #333;
+      }
+      .context-item:hover {
+        background-color: var(--ubuntu-orange);
+        color: white;
+      }
+      .context-divider {
+        height: 1px;
+        background: #eee;
+        margin: 4px 0;
+      }
+
+      /* Utility classes */
+      .hidden {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Top Bar -->
+    <div id="top-bar">
+      <div class="top-bar-left">
+        <span>活动</span>
+        <span id="current-app-name" style="font-weight: bold"></span>
+      </div>
+      <div
+        id="clock"
+        style="position: absolute; left: 50%; transform: translateX(-50%)"
+      ></div>
+      <div class="top-bar-right">
+        <span><i class="fas fa-network-wired"></i></span>
+        <span><i class="fas fa-volume-up"></i></span>
+        <span><i class="fas fa-battery-three-quarters"></i></span>
+        <span><i class="fas fa-caret-down"></i></span>
+      </div>
+    </div>
+
+    <!-- Dock -->
+    <div id="dock"></div>
+
+    <!-- Desktop Area -->
+    <div id="desktop"></div>
+
+    <!-- Context Menu -->
+    <div id="context-menu" class="context-menu"></div>
+
+    <script>
+      /**
+       * Ubuntu WebOS Core
+       */
+
+      // --- Configuration ---
+      const APPS = {
+        files: {
+          id: "files",
+          title: "文件",
+          icon: "fa-folder",
+          color: "#E95420",
+        },
+        browser: {
+          id: "browser",
+          title: "浏览器",
+          icon: "fa-globe",
+          color: "#e66000",
+        },
+        terminal: {
+          id: "terminal",
+          title: "终端",
+          icon: "fa-terminal",
+          color: "#333",
+        },
+        editor: {
+          id: "editor",
+          title: "文本编辑器",
+          icon: "fa-edit",
+          color: "#888",
+        },
+        code: {
+          id: "code",
+          title: "代码编辑器",
+          icon: "fa-code",
+          color: "#282c34",
+        },
+        photos: {
+          id: "photos",
+          title: "图片",
+          icon: "fa-images",
+          color: "#4aa",
+        },
+        calc: {
+          id: "calc",
+          title: "计算器",
+          icon: "fa-calculator",
+          color: "#555",
+        },
+        calendar: {
+          id: "calendar",
+          title: "日历",
+          icon: "fa-calendar-alt",
+          color: "#d32f2f",
+        },
+        paint: {
+          id: "paint",
+          title: "画板",
+          icon: "fa-paint-brush",
+          color: "#8d6e63",
+        },
+        game: {
+          id: "game",
+          title: "游戏",
+          icon: "fa-gamepad",
+          color: "#9c27b0",
+        },
+      };
+
+      // --- File System ---
+      class FileSystem {
+        constructor() {
+          this.listeners = [];
+          this.load();
+        }
+
+        load() {
+          const stored = localStorage.getItem("ubuntu_fs");
+          if (stored) {
+            try {
+              this.tree = JSON.parse(stored);
+              this.migrateLegacyStructure();
+              this.save();
+              return;
+            } catch (e) {}
+          }
+
+          this.tree = {
+            home: {
+              type: "folder",
+              children: {
+                桌面: {
+                  type: "folder",
+                  children: {
+                    "欢迎.txt": {
+                      type: "file",
+                      content: "欢迎使用 Ubuntu 网页系统！",
+                    },
+                  },
+                },
+                文档: {
+                  type: "folder",
+                  children: {
+                    "你好.txt": { type: "file", content: "你好，Ubuntu！" },
+                    "备忘录.txt": {
+                      type: "file",
+                      content: "今天上午 10 点开会。",
+                    },
+                  },
+                },
+                图片: {
+                  type: "folder",
+                  children: {
+                    "山脉.jpg": {
+                      type: "file",
+                      content:
+                        "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1000&q=80",
+                    },
+                    "城市.jpg": {
+                      type: "file",
+                      content:
+                        "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=1000&q=80",
+                    },
+                    "咖啡.jpg": {
+                      type: "file",
+                      content:
+                        "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1000&q=80",
+                    },
+                    "代码.jpg": {
+                      type: "file",
+                      content:
+                        "https://images.unsplash.com/photo-1542831371-29b0f74f9713?auto=format&fit=crop&w=1000&q=80",
+                    },
+                  },
+                },
+                代码: {
+                  type: "folder",
+                  children: {
+                    "脚本.py": {
+                      type: "file",
+                      content: 'print("你好，世界")',
+                    },
+                  },
+                },
+              },
+            },
+          };
+          this.save();
+        }
+
+        migrateLegacyStructure() {
+          const home = this.tree?.home;
+          if (!home || home.type !== "folder") return;
+
+          home.children = home.children || {};
+
+          const folderMap = {
+            Desktop: "桌面",
+            Documents: "文档",
+            Pictures: "图片",
+            Code: "代码",
+          };
+
+          Object.entries(folderMap).forEach(([legacy, localized]) => {
+            if (home.children[legacy] && !home.children[localized]) {
+              home.children[localized] = home.children[legacy];
+              delete home.children[legacy];
+            }
+          });
+
+          const desktop = home.children["桌面"];
+          if (
+            desktop &&
+            desktop.type === "folder" &&
+            desktop.children &&
+            desktop.children["Welcome.txt"] &&
+            !desktop.children["欢迎.txt"]
+          ) {
+            desktop.children["欢迎.txt"] = desktop.children["Welcome.txt"];
+            delete desktop.children["Welcome.txt"];
+          }
+        }
+
+        save() {
+          localStorage.setItem("ubuntu_fs", JSON.stringify(this.tree));
+          this.notify();
+        }
+
+        onChange(fn) {
+          this.listeners.push(fn);
+          return () => {
+            this.listeners = this.listeners.filter((f) => f !== fn);
+          };
+        }
+
+        notify() {
+          this.listeners.forEach((fn) => {
+            try {
+              fn();
+            } catch (e) {}
+          });
+        }
+
+        // Helper to resolve path to object node
+        // Path should be like ['home', 'Documents']
+        resolve(pathArr) {
+          let current = { children: this.tree };
+          for (let part of pathArr) {
+            if (current.children && current.children[part]) {
+              current = current.children[part];
+            } else {
+              return null;
+            }
+          }
+          return current;
+        }
+
+        ls(pathArr) {
+          const node = this.resolve(pathArr);
+          if (node && node.type === "folder") {
+            return Object.keys(node.children).map((name) => ({
+              name,
+              type: node.children[name].type,
+            }));
+          }
+          return [];
+        }
+
+        readFile(pathArr) {
+          const node = this.resolve(pathArr);
+          if (node && node.type === "file") return node.content;
+          return null;
+        }
+
+        writeFile(pathArr, content) {
+          const fileName = pathArr.pop();
+          const parent = this.resolve(pathArr);
+          if (parent && parent.type === "folder") {
+            parent.children[fileName] = { type: "file", content };
+            this.save();
+            return true;
+          }
+          return false;
+        }
+
+        mkdir(pathArr, name) {
+          const parent = this.resolve(pathArr);
+          if (parent && parent.type === "folder" && !parent.children[name]) {
+            parent.children[name] = { type: "folder", children: {} };
+            this.save();
+            return true;
+          }
+          return false;
+        }
+
+        rm(pathArr) {
+          const name = pathArr.pop();
+          const parent = this.resolve(pathArr);
+          if (parent && parent.children[name]) {
+            delete parent.children[name];
+            this.save();
+            return true;
+          }
+          return false;
+        }
+      }
+
+      const FS = new FileSystem();
+
+      // --- Window Manager ---
+      class WindowManager {
+        constructor() {
+          this.windows = [];
+          this.zIndexCounter = 100;
+          this.activeWindowId = null;
+          this.desktop = document.getElementById("desktop");
+
+          this.isDragging = false;
+          this.dragOffset = { x: 0, y: 0 };
+          this.dragTarget = null;
+
+          document.addEventListener("mousemove", (e) => this.onMouseMove(e));
+          document.addEventListener("mouseup", () => this.onMouseUp());
+        }
+
+        createWindow(appId, title, contentEl, minWidth = 400, minHeight = 300) {
+          const id = "win_" + Date.now();
+          const winEl = document.createElement("div");
+          winEl.className = "window app-" + appId;
+          winEl.id = id;
+          winEl.style.width = minWidth + "px";
+          winEl.style.height = minHeight + "px";
+          winEl.style.left = 50 + this.windows.length * 20 + "px";
+          winEl.style.top = 50 + this.windows.length * 20 + "px";
+
+          const header = document.createElement("div");
+          header.className = "window-header";
+
+          const controls = document.createElement("div");
+          controls.className = "window-controls";
+
+          const closeBtn = document.createElement("div");
+          closeBtn.className = "window-control win-close";
+          closeBtn.innerHTML = "×";
+          closeBtn.onclick = (e) => {
+            e.stopPropagation();
+            this.closeWindow(id);
+          };
+
+          const minBtn = document.createElement("div");
+          minBtn.className = "window-control win-minimize";
+          minBtn.innerHTML = "−";
+          minBtn.onclick = (e) => {
+            e.stopPropagation();
+            this.minimizeWindow(id);
+          };
+
+          const maxBtn = document.createElement("div");
+          maxBtn.className = "window-control win-maximize";
+          maxBtn.innerHTML = "□";
+          maxBtn.onclick = (e) => {
+            e.stopPropagation();
+            this.maximizeWindow(id);
+          };
+
+          controls.appendChild(closeBtn);
+          controls.appendChild(minBtn);
+          controls.appendChild(maxBtn);
+
+          const titleEl = document.createElement("div");
+          titleEl.className = "window-title";
+          titleEl.innerText = title;
+
+          // Empty div for balance
+          const spacer = document.createElement("div");
+          spacer.style.width = "46px";
+
+          header.appendChild(controls);
+          header.appendChild(titleEl);
+          header.appendChild(spacer);
+
+          header.addEventListener("mousedown", (e) => this.onMouseDown(e, id));
+
+          const body = document.createElement("div");
+          body.className = "window-content";
+          body.appendChild(contentEl);
+
+          winEl.appendChild(header);
+          winEl.appendChild(body);
+
+          this.desktop.appendChild(winEl);
+
+          const winObj = {
+            id,
+            appId,
+            element: winEl,
+            minimized: false,
+            maximized: false,
+            prevRect: null,
+          };
+          this.windows.push(winObj);
+
+          this.focusWindow(id);
+          this.updateDockIndicator(appId);
+
+          return winObj;
+        }
+
+        closeWindow(id) {
+          const index = this.windows.findIndex((w) => w.id === id);
+          if (index > -1) {
+            const win = this.windows[index];
+            win.element.remove();
+            this.windows.splice(index, 1);
+            this.updateDockIndicator(win.appId);
+            // reset active app name
+            document.getElementById("current-app-name").innerText = "";
+          }
+        }
+
+        maximizeWindow(id) {
+          const win = this.windows.find((w) => w.id === id);
+          if (!win) return;
+
+          if (win.maximized) {
+            // Restore
+            win.element.style.left = win.prevRect.left;
+            win.element.style.top = win.prevRect.top;
+            win.element.style.width = win.prevRect.width;
+            win.element.style.height = win.prevRect.height;
+            win.maximized = false;
+          } else {
+            // Maximize
+            win.prevRect = {
+              left: win.element.style.left,
+              top: win.element.style.top,
+              width: win.element.style.width,
+              height: win.element.style.height,
+            };
+            win.element.style.left = "0";
+            win.element.style.top = "0";
+            win.element.style.width = "100%";
+            win.element.style.height = "100%";
+            win.maximized = true;
+          }
+        }
+
+        minimizeWindow(id) {
+          // Simple logic: hide it
+          const win = this.windows.find((w) => w.id === id);
+          if (win) {
+            win.element.style.display = "none";
+            win.minimized = true;
+          }
+        }
+
+        restoreWindow(id) {
+          const win = this.windows.find((w) => w.id === id);
+          if (win) {
+            win.element.style.display = "flex";
+            win.minimized = false;
+            this.focusWindow(id);
+          }
+        }
+
+        focusWindow(id) {
+          const win = this.windows.find((w) => w.id === id);
+          if (!win) return;
+
+          this.zIndexCounter++;
+          win.element.style.zIndex = this.zIndexCounter;
+          this.activeWindowId = id;
+
+          // highlight dock
+          document
+            .querySelectorAll(".dock-item")
+            .forEach((el) => el.classList.remove("active"));
+          const dockItem = document.querySelector(
+            `.dock-item[data-app="${win.appId}"]`,
+          );
+          if (dockItem) dockItem.classList.add("active");
+
+          // Set Title Bar Name
+          document.getElementById("current-app-name").innerText =
+            APPS[win.appId].title;
+        }
+
+        onMouseDown(e, id) {
+          if (e.target.closest(".window-control")) return;
+          this.isDragging = true;
+          this.dragTarget = this.windows.find((w) => w.id === id);
+          this.focusWindow(id);
+
+          if (this.dragTarget.maximized) return; // Don't drag if maximized initially
+
+          const rect = this.dragTarget.element.getBoundingClientRect();
+          // Adjust for offset relative to parent since position is absolute
+          const parentRect = this.desktop.getBoundingClientRect();
+
+          this.dragOffset.x = e.clientX - rect.left;
+          this.dragOffset.y = e.clientY - rect.top;
+        }
+
+        onMouseMove(e) {
+          if (!this.isDragging || !this.dragTarget || this.dragTarget.maximized)
+            return;
+
+          // Boundaries
+          const parentRect = this.desktop.getBoundingClientRect();
+          let newX = e.clientX - parentRect.left - this.dragOffset.x;
+          let newY = e.clientY - parentRect.top - this.dragOffset.y;
+
+          this.dragTarget.element.style.left = newX + "px";
+          this.dragTarget.element.style.top = newY + "px";
+        }
+
+        onMouseUp() {
+          this.isDragging = false;
+          this.dragTarget = null;
+        }
+
+        updateDockIndicator(appId) {
+          const isOpen = this.windows.some((w) => w.appId === appId);
+          const dockItem = document.querySelector(
+            `.dock-item[data-app="${appId}"]`,
+          );
+          if (dockItem) {
+            if (isOpen) dockItem.classList.add("running");
+            else dockItem.classList.remove("running");
+          }
+        }
+
+        showDialog(options) {
+          const {
+            title = "提示",
+            message = "",
+            type = "alert",
+            defaultValue = "",
+            onConfirm = null,
+          } = options;
+
+          const backdrop = document.createElement("div");
+          backdrop.style.position = "absolute";
+          backdrop.style.top = "0";
+          backdrop.style.left = "0";
+          backdrop.style.width = "100vw";
+          backdrop.style.height = "100vh";
+          backdrop.style.backgroundColor = "rgba(0,0,0,0.5)";
+          backdrop.style.zIndex = "999999";
+          backdrop.style.display = "flex";
+          backdrop.style.justifyContent = "center";
+          backdrop.style.alignItems = "center";
+
+          const dialog = document.createElement("div");
+          dialog.style.width = "350px";
+          dialog.style.background = "#f2f2f2";
+          dialog.style.borderRadius = "8px";
+          dialog.style.boxShadow = "0 10px 30px rgba(0,0,0,0.5)";
+          dialog.style.display = "flex";
+          dialog.style.flexDirection = "column";
+          dialog.style.overflow = "hidden";
+
+          const header = document.createElement("div");
+          header.style.padding = "10px 15px";
+          header.style.background = "#e0e0e0";
+          header.style.borderBottom = "1px solid #ccc";
+          header.style.fontWeight = "bold";
+          header.style.color = "#333";
+          header.innerText = title;
+
+          const content = document.createElement("div");
+          content.style.padding = "20px";
+          content.style.color = "#333";
+          content.innerText = message;
+
+          let input = null;
+          if (type === "prompt") {
+            input = document.createElement("input");
+            input.type = "text";
+            input.value = defaultValue;
+            input.style.width = "100%";
+            input.style.marginTop = "10px";
+            input.style.padding = "5px";
+            input.style.border = "1px solid #ccc";
+            input.style.borderRadius = "4px";
+            content.appendChild(input);
+          }
+
+          const footer = document.createElement("div");
+          footer.style.padding = "10px 15px";
+          footer.style.borderTop = "1px solid #ccc";
+          footer.style.display = "flex";
+          footer.style.justifyContent = "flex-end";
+          footer.style.gap = "10px";
+          footer.style.background = "#f9f9f9";
+
+          const close = () => {
+            backdrop.remove();
+          };
+
+          if (type !== "alert") {
+            const cancelBtn = document.createElement("button");
+            cancelBtn.innerText = "取消";
+            cancelBtn.style.padding = "5px 15px";
+            cancelBtn.style.border = "1px solid #ccc";
+            cancelBtn.style.borderRadius = "4px";
+            cancelBtn.style.cursor = "pointer";
+            cancelBtn.onclick = close;
+            footer.appendChild(cancelBtn);
+          }
+
+          const okBtn = document.createElement("button");
+          okBtn.innerText = "确定";
+          okBtn.style.padding = "5px 15px";
+          okBtn.style.background = "#E95420";
+          okBtn.style.color = "white";
+          okBtn.style.border = "none";
+          okBtn.style.borderRadius = "4px";
+          okBtn.style.cursor = "pointer";
+
+          okBtn.onclick = () => {
+            if (onConfirm) {
+              if (type === "prompt") onConfirm(input.value);
+              else onConfirm();
+            }
+            close();
+          };
+
+          footer.appendChild(okBtn);
+          dialog.appendChild(header);
+          dialog.appendChild(content);
+          dialog.appendChild(footer);
+          backdrop.appendChild(dialog);
+          document.body.appendChild(backdrop);
+
+          if (input) input.focus();
+          if (type === "prompt") {
+            input.addEventListener("keydown", (e) => {
+              if (e.key === "Enter") okBtn.click();
+            });
+          }
+        }
+      }
+
+      const WM = new WindowManager();
+
+      // --- App Factories ---
+
+      const AppHandlers = {
+        files: {
+          open: (path = null) => {
+            const navStack = path ? [...path] : ["home"];
+
+            const container = document.createElement("div");
+            container.className = "file-browser-view";
+
+            const toolbar = document.createElement("div");
+            toolbar.className = "fb-toolbar";
+
+            const upBtn = document.createElement("button");
+            upBtn.innerHTML = '<i class="fas fa-arrow-up"></i>';
+            upBtn.className = "editor-btn";
+
+            const pathDisplay = document.createElement("input");
+            pathDisplay.type = "text";
+            pathDisplay.value = "/home";
+            pathDisplay.className = "browser-url";
+            pathDisplay.readOnly = true;
+
+            const newFolderBtn = document.createElement("button");
+            newFolderBtn.innerHTML = '<i class="fas fa-folder-plus"></i>';
+            newFolderBtn.className = "editor-btn";
+            newFolderBtn.title = "新建文件夹";
+
+            const newFileBtn = document.createElement("button");
+            newFileBtn.innerHTML = '<i class="fas fa-file-medical"></i>';
+            newFileBtn.className = "editor-btn";
+            newFileBtn.title = "新建文件";
+
+            toolbar.appendChild(upBtn);
+            toolbar.appendChild(pathDisplay);
+            toolbar.appendChild(newFolderBtn);
+            toolbar.appendChild(newFileBtn);
+
+            const grid = document.createElement("div");
+            grid.className = "fb-grid";
+
+            const refresh = () => {
+              grid.innerHTML = "";
+              pathDisplay.value = "/" + navStack.join("/");
+              const items = FS.ls(navStack);
+
+              items.forEach((item) => {
+                const el = document.createElement("div");
+                el.className = `fb-item ${item.type}`;
+                el.innerHTML = `
+                            <i class="fas ${item.type === "folder" ? "fa-folder" : "fa-file-alt"}"></i>
+                            <span class="fb-item-name">${item.name}</span>
+                        `;
+                el.ondblclick = () => {
+                  if (item.type === "folder") {
+                    navStack.push(item.name);
+                    refresh();
+                  } else {
+                    // Open file content in appropriate app
+                    if (item.name.endsWith(".txt"))
+                      AppHandlers.editor.open([...navStack, item.name]);
+                    else if (
+                      item.name.endsWith(".py") ||
+                      item.name.endsWith(".js")
+                    )
+                      AppHandlers.code.open([...navStack, item.name]);
+                    else if (
+                      item.name.endsWith(".jpg") ||
+                      item.name.endsWith(".png")
+                    )
+                      AppHandlers.photos.open([...navStack, item.name]); // Basic handling
+                  }
+                };
+
+                // Right click delete context menu
+                el.oncontextmenu = (e) => {
+                  e.preventDefault();
+                  WM.showDialog({
+                    title: "删除项目",
+                    message: `确定删除 ${item.name} 吗？`,
+                    type: "confirm",
+                    onConfirm: () => {
+                      FS.rm([...navStack, item.name]);
+                      refresh();
+                    },
+                  });
+                };
+
+                grid.appendChild(el);
+              });
+            };
+
+            upBtn.onclick = () => {
+              if (navStack.length > 1) {
+                // Stay in root/home at least generally? Or just allow root.
+                navStack.pop();
+                refresh();
+              }
+            };
+
+            newFolderBtn.onclick = () => {
+              WM.showDialog({
+                title: "新建文件夹",
+                message: "请输入文件夹名称：",
+                type: "prompt",
+                onConfirm: (name) => {
+                  if (name) {
+                    const success = FS.mkdir([...navStack], name);
+                    if (!success) {
+                      WM.showDialog({
+                        title: "错误",
+                        message: "创建文件夹失败（可能已存在）。",
+                      });
+                    } else refresh();
+                  }
+                },
+              });
+            };
+
+            newFileBtn.onclick = () => {
+              WM.showDialog({
+                title: "新建文件",
+                message: "请输入文件名：",
+                type: "prompt",
+                onConfirm: (name) => {
+                  if (name) {
+                    if (name.indexOf(".") === -1) name += ".txt";
+                    const success = FS.writeFile([...navStack, name], "");
+                    if (!success) {
+                      WM.showDialog({
+                        title: "错误",
+                        message: "创建文件失败。",
+                      });
+                    } else refresh();
+                  }
+                },
+              });
+            };
+
+            container.appendChild(toolbar);
+            container.appendChild(grid);
+
+            refresh();
+            FS.onChange(() => {
+              if (container.isConnected) refresh();
+            });
+            WM.createWindow("files", "文件", container, 600, 400);
+          },
+        },
+        terminal: {
+          open: () => {
+            const container = document.createElement("div");
+            container.className = "term-body";
+
+            let currentPath = ["home"];
+            const history = [];
+            let historyIdx = -1;
+
+            const output = document.createElement("div");
+            output.className = "term-output";
+            output.innerText =
+              "Ubuntu 22.04 LTS (GNU/Linux 5.15.0-generic x86_64)\n输入命令开始使用。\n\n";
+
+            const inputLine = document.createElement("div");
+            inputLine.className = "term-input-line";
+
+            const prompt = document.createElement("span");
+            prompt.className = "term-prompt";
+            const updatePrompt = () => {
+              prompt.innerText = `user@ubuntu:~/${currentPath.slice(1).join("/")}$`;
+            };
+            updatePrompt();
+
+            const input = document.createElement("input");
+            input.className = "term-input";
+            input.type = "text";
+            input.autofocus = true;
+
+            inputLine.appendChild(prompt);
+            inputLine.appendChild(input);
+            container.appendChild(output);
+            container.appendChild(inputLine);
+
+            // Keep focus
+            container.onclick = () => input.focus();
+
+            input.addEventListener("keydown", (e) => {
+              if (e.key === "Enter") {
+                const cmd = input.value.trim();
+                history.push(cmd);
+                historyIdx = history.length;
+
+                output.innerText += `${prompt.innerText} ${cmd}\n`;
+
+                const args = cmd.split(" ");
+                const command = args[0];
+
+                switch (command) {
+                  case "clear":
+                    output.innerText = "";
+                    break;
+                  case "pwd":
+                    output.innerText += "/" + currentPath.join("/") + "\n";
+                    break;
+                  case "ls":
+                    const items = FS.ls(currentPath);
+                    output.innerText +=
+                      items
+                        .map((i) => i.name + (i.type === "folder" ? "/" : ""))
+                        .join("  ") + "\n";
+                    break;
+                  case "cd":
+                    if (!args[1] || args[1] === "~") {
+                      currentPath = ["home"];
+                    } else if (args[1] === "..") {
+                      if (currentPath.length > 0) currentPath.pop();
+                    } else {
+                      // Check exists
+                      const testPath = [...currentPath, args[1]];
+                      const resolved = FS.resolve(testPath);
+                      if (resolved && resolved.type === "folder") {
+                        currentPath.push(args[1]);
+                      } else {
+                        output.innerText += `-bash: cd: ${args[1]}: 没有该文件或目录\n`;
+                      }
+                    }
+                    break;
+                  case "mkdir":
+                    if (args[1]) FS.mkdir(currentPath, args[1]);
+                    break;
+                  case "touch":
+                    if (args[1]) FS.writeFile([...currentPath, args[1]], "");
+                    break;
+                  case "rm":
+                    if (args[1]) FS.rm([...currentPath, args[1]]);
+                    break;
+                  case "python":
+                  case "python3":
+                    output.innerText += `Python 3.10.6 (main, Nov 14 2022, 16:19:08) [GCC 11.3.0] on linux\n输入 "help"、"copyright"、"credits" 或 "license" 获取更多信息。\n>>> print("你好，世界")\n你好，世界\n>>> exit()\n`;
+                    break;
+                  case "":
+                    break;
+                  default:
+                    output.innerText += `${command}: 未找到命令\n`;
+                }
+
+                input.value = "";
+                updatePrompt();
+                container.scrollTop = container.scrollHeight;
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                if (historyIdx > 0) {
+                  historyIdx--;
+                  input.value = history[historyIdx];
+                }
+              } else if (e.key === "ArrowDown") {
+                e.preventDefault();
+                if (historyIdx < history.length - 1) {
+                  historyIdx++;
+                  input.value = history[historyIdx];
+                } else {
+                  historyIdx = history.length;
+                  input.value = "";
+                }
+              }
+            });
+
+            WM.createWindow("terminal", "终端", container, 600, 400);
+          },
+        },
+        editor: {
+          open: (filePathArr = null) => {
+            const container = document.createElement("div");
+            container.style.height = "100%";
+            container.style.display = "flex";
+            container.style.flexDirection = "column";
+
+            const toolbar = document.createElement("div");
+            toolbar.className = "editor-toolbar";
+
+            const saveBtn = document.createElement("button");
+            saveBtn.className = "editor-btn";
+            saveBtn.innerText = "保存";
+
+            const clearBtn = document.createElement("button");
+            clearBtn.className = "editor-btn";
+            clearBtn.innerText = "清空";
+
+            const status = document.createElement("span");
+            status.style.fontSize = "12px";
+            status.style.color = "#888";
+            status.style.marginLeft = "auto";
+
+            toolbar.appendChild(saveBtn);
+            toolbar.appendChild(clearBtn);
+            toolbar.appendChild(status);
+
+            const textarea = document.createElement("textarea");
+            textarea.className = "text-editor-area";
+
+            // Load Content
+            if (filePathArr) {
+              const content = FS.readFile(filePathArr);
+              if (content !== null) textarea.value = content;
+              status.innerText = filePathArr[filePathArr.length - 1];
+            } else {
+              status.innerText = "未命名";
+            }
+
+            clearBtn.onclick = () => {
+              textarea.value = "";
+              textarea.focus();
+            };
+
+            saveBtn.onclick = () => {
+              if (filePathArr) {
+                FS.writeFile([...filePathArr], textarea.value);
+                status.innerText =
+                  "已保存：" + new Date().toLocaleTimeString("zh-CN");
+              } else {
+                WM.showDialog({
+                  title: "另存为",
+                  message: "请输入文件名：",
+                  defaultValue: "新建文档.txt",
+                  type: "prompt",
+                  onConfirm: (name) => {
+                    if (name) {
+                      filePathArr = ["home", name];
+                      FS.writeFile([...filePathArr], textarea.value);
+                      status.innerText = "已保存 " + name;
+                    }
+                  },
+                });
+              }
+            };
+
+            container.appendChild(toolbar);
+            container.appendChild(textarea);
+
+            WM.createWindow(
+              "editor",
+              filePathArr ? filePathArr[filePathArr.length - 1] : "文本编辑器",
+              container,
+            );
+          },
+        },
+        code: {
+          open: (filePathArr = null) => {
+            const container = document.createElement("div");
+            container.className = "code-split";
+
+            const toolbar = document.createElement("div");
+            toolbar.className = "editor-toolbar";
+            const runBtn = document.createElement("button");
+            runBtn.className = "editor-btn";
+            runBtn.innerHTML = '<i class="fas fa-play"></i> 运行';
+            const saveBtn = document.createElement("button");
+            saveBtn.className = "editor-btn";
+            saveBtn.innerHTML = '<i class="fas fa-save"></i> 保存';
+
+            toolbar.appendChild(runBtn);
+            toolbar.appendChild(saveBtn);
+
+            // Editor Container
+            const editorContainer = document.createElement("div");
+            editorContainer.className = "code-editor-container";
+
+            const highlightLayer = document.createElement("div");
+            highlightLayer.className = "code-highlight";
+
+            const editorArea = document.createElement("textarea");
+            editorArea.className = "code-area";
+            editorArea.spellcheck = false;
+
+            if (!filePathArr) {
+              editorArea.value =
+                '# Python 示例\ndef hello():\n    print("Hello World")\n\nfor i in range(5):\n    print(f"计数: {i}")';
+            } else {
+              const content = FS.readFile(filePathArr);
+              if (content) editorArea.value = content;
+            }
+
+            // Simple Syntax Highlighter
+            const applyHighlight = (text) => {
+              // Escape HTML
+              let html = text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+
+              // 1. Strings (Simple quotes) - Placeholders first to avoid keyword collisions?
+              // Simple sequential is tricky. Regex tokenize.
+              // Pattern: Comment | String | Keyword | Number | Bracket
+              const tokenRegex =
+                /((#.*)|(["'].*?["'])|\b(def|class|if|else|elif|while|for|in|return|import|from|print|True|False|None)\b|(\d+)|([{}()\[\]]))/g;
+
+              html = html.replace(
+                tokenRegex,
+                (match, p1, p2, p3, p4, p5, p6) => {
+                  if (p2) return `<span class="token-comment">${match}</span>`;
+                  if (p3) return `<span class="token-string">${match}</span>`;
+                  if (p4) return `<span class="token-keyword">${match}</span>`;
+                  if (p5) return `<span class="token-number">${match}</span>`;
+                  // if(p6) return `<span class="token-bracket">${match}</span>`; // optional
+                  return match;
+                },
+              );
+
+              highlightLayer.innerHTML = html + "<br>"; // Trailing break
+            };
+
+            // Initial highlight
+            applyHighlight(editorArea.value);
+
+            const outputArea = document.createElement("div");
+            outputArea.className = "code-output";
+            outputArea.innerText = "运行输出将显示在这里...";
+
+            // Sync Events
+            editorArea.addEventListener("input", () => {
+              applyHighlight(editorArea.value);
+            });
+            editorArea.addEventListener("scroll", () => {
+              highlightLayer.scrollTop = editorArea.scrollTop;
+              highlightLayer.scrollLeft = editorArea.scrollLeft;
+            });
+
+            editorContainer.appendChild(highlightLayer);
+            editorContainer.appendChild(editorArea);
+
+            runBtn.onclick = () => {
+              // Extremely simple mock python execution
+              const code = editorArea.value;
+              outputArea.innerText = "> 正在运行...\n";
+              const lines = code.split("\n");
+              lines.forEach((line) => {
+                const matchPrint = line.match(/print\((.*)\)/);
+                if (matchPrint) {
+                  let val = matchPrint[1].replace(/["']/g, ""); // naive strip quotes
+                  // very mock 'f-string' support for the demo default code
+                  if (val.includes("{i}")) {
+                    for (let k = 0; k < 5; k++)
+                      outputArea.innerText += val.replace("{i}", k) + "\n";
+                  } else {
+                    outputArea.innerText += val + "\n";
+                  }
+                }
+              });
+              outputArea.innerText += "> 运行完成。";
+            };
+
+            saveBtn.onclick = () => {
+              if (filePathArr) {
+                FS.writeFile([...filePathArr], editorArea.value);
+                WM.showDialog({ title: "成功", message: "保存成功！" });
+              } else {
+                WM.showDialog({
+                  title: "另存为",
+                  message: "请输入文件名：",
+                  defaultValue: "脚本.py",
+                  type: "prompt",
+                  onConfirm: (name) => {
+                    if (name) {
+                      FS.mkdir(["home"], "代码");
+                      const newPath = ["home", "代码", name];
+                      FS.writeFile([...newPath], editorArea.value);
+                      filePathArr = newPath;
+                      WM.showDialog({ title: "成功", message: "保存成功！" });
+                    }
+                  },
+                });
+              }
+            };
+
+            container.appendChild(toolbar);
+            container.appendChild(editorContainer);
+            container.appendChild(outputArea);
+
+            WM.createWindow("code", "代码编辑器", container, 600, 500);
+          },
+        },
+        browser: {
+          open: () => {
+            const container = document.createElement("div");
+            container.style.height = "100%";
+            container.style.display = "flex";
+            container.style.flexDirection = "column";
+
+            const bar = document.createElement("div");
+            bar.className = "browser-bar";
+
+            const backBtn = document.createElement("button");
+            backBtn.innerText = "←";
+            const fwdBtn = document.createElement("button");
+            fwdBtn.innerText = "→";
+            const refreshBtn = document.createElement("button");
+            refreshBtn.innerText = "↻";
+
+            const urlInput = document.createElement("input");
+            urlInput.className = "browser-url";
+            urlInput.value = "https://www.wikipedia.org";
+
+            const goBtn = document.createElement("button");
+            goBtn.innerText = "访问";
+
+            bar.appendChild(backBtn);
+            bar.appendChild(fwdBtn);
+            bar.appendChild(refreshBtn);
+            bar.appendChild(urlInput);
+            bar.appendChild(goBtn);
+
+            const iframe = document.createElement("iframe");
+            iframe.className = "browser-frame";
+
+            // History Management
+            const history = [];
+            let historyIndex = -1;
+
+            const updateButtons = () => {
+              backBtn.disabled = historyIndex <= 0;
+              fwdBtn.disabled = historyIndex >= history.length - 1;
+              backBtn.style.opacity = backBtn.disabled ? 0.5 : 1;
+              fwdBtn.style.opacity = fwdBtn.disabled ? 0.5 : 1;
+            };
+
+            const navigate = async (url, isHistoryNav = false) => {
+              let targetUrl = url.trim();
+              if (!targetUrl.startsWith("http"))
+                targetUrl = "https://" + targetUrl;
+
+              urlInput.value = targetUrl;
+
+              try {
+                // Use AllOrigins JSON API to fetch content - avoids User-Agent blocks (e.g. Wikipedia)
+                iframe.srcdoc = "加载中...";
+                const res = await fetch(
+                  "https://api.allorigins.win/get?url=" +
+                    encodeURIComponent(targetUrl),
+                );
+                const data = await res.json();
+                let html = data.contents;
+
+                // Inject <base> tag so relative links/images work
+                const baseTag = `<base href="${targetUrl}" target="_blank">`;
+                if (html.includes("<head>")) {
+                  html = html.replace("<head>", "<head>" + baseTag);
+                } else {
+                  html = baseTag + html;
+                }
+
+                iframe.removeAttribute("src");
+                iframe.srcdoc = html;
+              } catch (e) {
+                iframe.srcdoc = `<div style="padding:20px"><h3>页面加载失败</h3><p>${e.message}</p></div>`;
+              }
+
+              if (!isHistoryNav) {
+                if (historyIndex < history.length - 1) {
+                  history.splice(historyIndex + 1);
+                }
+                history.push(targetUrl);
+                historyIndex++;
+              }
+              updateButtons();
+            };
+
+            const loadUrl = () => {
+              navigate(urlInput.value);
+            };
+
+            goBtn.onclick = loadUrl;
+            urlInput.addEventListener("keypress", (e) => {
+              if (e.key === "Enter") loadUrl();
+            });
+            refreshBtn.onclick = loadUrl;
+
+            backBtn.onclick = () => {
+              if (historyIndex > 0) {
+                historyIndex--;
+                navigate(history[historyIndex], true);
+              }
+            };
+
+            fwdBtn.onclick = () => {
+              if (historyIndex < history.length - 1) {
+                historyIndex++;
+                navigate(history[historyIndex], true);
+              }
+            };
+
+            // Initial Load
+            navigate(urlInput.value);
+
+            container.appendChild(bar);
+            container.appendChild(iframe);
+            WM.createWindow("browser", "浏览器", container, 800, 600);
+          },
+        },
+        calc: {
+          open: () => {
+            const container = document.createElement("div");
+            container.className = "calc-grid";
+
+            const display = document.createElement("div");
+            display.className = "calc-display";
+            display.innerText = "0";
+            container.appendChild(display);
+
+            const btns = [
+              "C",
+              "÷",
+              "×",
+              "⌫",
+              "7",
+              "8",
+              "9",
+              "-",
+              "4",
+              "5",
+              "6",
+              "+",
+              "1",
+              "2",
+              "3",
+              "=",
+              "0",
+              ".",
+            ];
+
+            let currentExp = "";
+
+            btns.forEach((b) => {
+              const btn = document.createElement("button");
+              btn.className = "calc-btn";
+              btn.innerText = b;
+              if (["C", "÷", "×", "-", "+", "=", "⌫"].includes(b))
+                btn.classList.add("op");
+              if (b === "0") btn.style.gridColumn = "span 2";
+              if (b === "=") btn.classList.add("eq");
+
+              btn.onclick = () => {
+                if (b === "C") {
+                  currentExp = "";
+                  display.innerText = "0";
+                } else if (b === "⌫") {
+                  currentExp = currentExp.slice(0, -1);
+                  display.innerText = currentExp || "0";
+                } else if (b === "=") {
+                  try {
+                    const cleanExp = currentExp
+                      .replace("×", "*")
+                      .replace("÷", "/");
+                    display.innerText = eval(cleanExp);
+                    currentExp = display.innerText;
+                  } catch (e) {
+                    display.innerText = "错误";
+                    currentExp = "";
+                  }
+                } else {
+                  // prevent too many ops
+                  currentExp += b;
+                  display.innerText = currentExp;
+                }
+              };
+              container.appendChild(btn);
+            });
+
+            WM.createWindow("calc", "计算器", container, 300, 400);
+          },
+        },
+        calendar: {
+          open: () => {
+            const container = document.createElement("div");
+            container.className = "calendar-app";
+
+            let date = new Date();
+
+            const render = () => {
+              container.innerHTML = "";
+
+              const header = document.createElement("div");
+              header.className = "cal-header";
+              header.style.gap = "5px";
+
+              const prevBtn = document.createElement("button");
+              prevBtn.innerText = "<";
+              const nextBtn = document.createElement("button");
+              nextBtn.innerText = ">";
+
+              // Month Select
+              const monthSelect = document.createElement("select");
+              const months = [
+                "1月",
+                "2月",
+                "3月",
+                "4月",
+                "5月",
+                "6月",
+                "7月",
+                "8月",
+                "9月",
+                "10月",
+                "11月",
+                "12月",
+              ];
+              months.forEach((m, i) => {
+                const opt = document.createElement("option");
+                opt.value = i;
+                opt.innerText = m;
+                if (i === date.getMonth()) opt.selected = true;
+                monthSelect.appendChild(opt);
+              });
+              monthSelect.onchange = (e) => {
+                date.setMonth(parseInt(e.target.value));
+                render();
+              };
+
+              // Year Select
+              const yearSelect = document.createElement("select");
+              for (let y = 1900; y <= 2099; y++) {
+                const opt = document.createElement("option");
+                opt.value = y;
+                opt.innerText = y;
+                if (y === date.getFullYear()) opt.selected = true;
+                yearSelect.appendChild(opt);
+              }
+              yearSelect.onchange = (e) => {
+                date.setFullYear(parseInt(e.target.value));
+                render();
+              };
+
+              prevBtn.onclick = () => {
+                date.setMonth(date.getMonth() - 1);
+                render();
+              };
+              nextBtn.onclick = () => {
+                date.setMonth(date.getMonth() + 1);
+                render();
+              };
+
+              header.appendChild(prevBtn);
+              header.appendChild(monthSelect);
+              header.appendChild(yearSelect);
+              header.appendChild(nextBtn);
+              container.appendChild(header);
+
+              const grid = document.createElement("div");
+              grid.className = "cal-grid";
+
+              ["日", "一", "二", "三", "四", "五", "六"].forEach((d) => {
+                const dh = document.createElement("div");
+                dh.className = "cal-day-header";
+                dh.innerText = d;
+                grid.appendChild(dh);
+              });
+
+              const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+              const lastDay = new Date(
+                date.getFullYear(),
+                date.getMonth() + 1,
+                0,
+              );
+
+              // padding
+              for (let i = 0; i < firstDay.getDay(); i++) {
+                const empty = document.createElement("div");
+                empty.className = "cal-day empty";
+                grid.appendChild(empty);
+              }
+
+              const today = new Date();
+              for (let d = 1; d <= lastDay.getDate(); d++) {
+                const dayEl = document.createElement("div");
+                dayEl.className = "cal-day";
+                dayEl.innerText = d;
+
+                if (
+                  date.getFullYear() === today.getFullYear() &&
+                  date.getMonth() === today.getMonth() &&
+                  d === today.getDate()
+                ) {
+                  dayEl.classList.add("today");
+                }
+
+                dayEl.onclick = () => {
+                  document
+                    .querySelectorAll(".cal-day")
+                    .forEach((el) => el.classList.remove("selected"));
+                  dayEl.classList.add("selected");
+                };
+
+                grid.appendChild(dayEl);
+              }
+              container.appendChild(grid);
+            };
+
+            render();
+            WM.createWindow("calendar", "日历", container, 350, 400);
+          },
+        },
+        paint: {
+          open: () => {
+            const container = document.createElement("div");
+            container.style.height = "100%";
+            container.style.display = "flex";
+            container.style.flexDirection = "column";
+
+            const toolbar = document.createElement("div");
+            toolbar.className = "paint-toolbar";
+
+            const clearBtn = document.createElement("button");
+            clearBtn.innerText = "清空";
+            const colorPicker = document.createElement("input");
+            type = "color";
+            colorPicker.value = "#000000";
+
+            // Color patches
+            const colors = [
+              "#000000",
+              "#FF0000",
+              "#00FF00",
+              "#0000FF",
+              "#FFFF00",
+              "#E95420",
+            ];
+            const colorContainer = document.createElement("div");
+            colorContainer.style.display = "flex";
+            colorContainer.style.gap = "5px";
+
+            let curColor = "#000000";
+            let curSize = 3;
+
+            colors.forEach((c) => {
+              const d = document.createElement("div");
+              d.style.width = "20px";
+              d.style.height = "20px";
+              d.style.background = c;
+              d.style.cursor = "pointer";
+              d.onclick = () => (curColor = c);
+              colorContainer.appendChild(d);
+            });
+
+            const sizeRange = document.createElement("input");
+            sizeRange.type = "range";
+            sizeRange.min = 1;
+            sizeRange.max = 20;
+            sizeRange.value = 3;
+            sizeRange.onchange = (e) => (curSize = e.target.value);
+
+            toolbar.appendChild(clearBtn);
+            toolbar.appendChild(colorContainer);
+            toolbar.appendChild(sizeRange);
+
+            const canvasBox = document.createElement("div");
+            canvasBox.className = "paint-canvas-container";
+            const canvas = document.createElement("canvas");
+            // Wait for append to size correctly? No, resize observer would be better but let's just make it huge
+            canvas.width = 1920;
+            canvas.height = 1080;
+
+            canvasBox.appendChild(canvas);
+
+            const ctx = canvas.getContext("2d");
+            let painting = false;
+
+            canvas.addEventListener("mousedown", (e) => {
+              painting = true;
+              ctx.beginPath();
+              ctx.moveTo(e.offsetX, e.offsetY);
+            });
+            canvas.addEventListener("mousemove", (e) => {
+              if (!painting) return;
+              ctx.lineWidth = curSize;
+              ctx.lineCap = "round";
+              ctx.strokeStyle = curColor;
+              ctx.lineTo(e.offsetX, e.offsetY);
+              ctx.stroke();
+            });
+            canvas.addEventListener("mouseup", () => (painting = false));
+
+            clearBtn.onclick = () =>
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            container.appendChild(toolbar);
+            container.appendChild(canvasBox);
+
+            WM.createWindow("paint", "画板", container);
+          },
+        },
+        game: {
+          open: () => {
+            const container = document.createElement("div");
+            container.className = "game-container";
+
+            let board = ["", "", "", "", "", "", "", "", ""];
+            let currentPlayer = "X";
+            let active = true;
+            let scores = { X: 0, O: 0 };
+
+            const status = document.createElement("div");
+            status.className = "game-status";
+            status.innerText = "轮到玩家 X";
+
+            const scoreDisplay = document.createElement("div");
+            scoreDisplay.className = "game-score";
+            const updateScore = () =>
+              (scoreDisplay.innerText = `X: ${scores.X} | O: ${scores.O}`);
+            updateScore();
+
+            const boardEl = document.createElement("div");
+            boardEl.className = "game-board";
+
+            const checkWin = () => {
+              const wins = [
+                [0, 1, 2],
+                [3, 4, 5],
+                [6, 7, 8],
+                [0, 3, 6],
+                [1, 4, 7],
+                [2, 5, 8],
+                [0, 4, 8],
+                [2, 4, 6],
+              ];
+              for (let w of wins) {
+                if (
+                  board[w[0]] &&
+                  board[w[0]] === board[w[1]] &&
+                  board[w[0]] === board[w[2]]
+                ) {
+                  return board[w[0]];
+                }
+              }
+              if (!board.includes("")) return "Draw";
+              return null;
+            };
+
+            const renderBoard = () => {
+              boardEl.innerHTML = "";
+              board.forEach((cell, idx) => {
+                const cellEl = document.createElement("div");
+                cellEl.className = "game-cell";
+                cellEl.innerText = cell;
+                if (cell === "X") cellEl.style.color = "#E95420";
+                if (cell === "O") cellEl.style.color = "#772953";
+
+                cellEl.onclick = () => {
+                  if (!active || cell) return;
+                  board[idx] = currentPlayer;
+                  const res = checkWin();
+                  if (res) {
+                    active = false;
+                    status.innerText =
+                      res === "Draw" ? "平局！" : `玩家 ${res} 获胜！`;
+                    if (res !== "Draw") {
+                      scores[res]++;
+                      updateScore();
+                    }
+                    setTimeout(() => {
+                      board = ["", "", "", "", "", "", "", "", ""];
+                      active = true;
+                      currentPlayer = "X";
+                      status.innerText = "轮到玩家 X";
+                      renderBoard();
+                    }, 2000);
+                  } else {
+                    currentPlayer = currentPlayer === "X" ? "O" : "X";
+                    status.innerText = `轮到玩家 ${currentPlayer}`;
+                  }
+                  renderBoard(); // re-render to show mark
+                };
+                boardEl.appendChild(cellEl);
+              });
+            };
+
+            renderBoard();
+
+            container.appendChild(status);
+            container.appendChild(boardEl);
+            container.appendChild(scoreDisplay);
+
+            WM.createWindow("game", "游戏", container, 400, 500);
+          },
+        },
+        photos: {
+          open: (path) => {
+            const container = document.createElement("div");
+            container.style.height = "100%";
+            container.style.display = "flex";
+            container.style.flexDirection = "column";
+            container.style.backgroundColor = "#111"; // Dark background for photo viewer
+
+            // Navbar
+            const navbar = document.createElement("div");
+            navbar.style.height = "40px";
+            navbar.style.backgroundColor = "#333";
+            navbar.style.display = "flex";
+            navbar.style.alignItems = "center";
+            navbar.style.padding = "0 10px";
+            navbar.style.borderBottom = "1px solid #444";
+
+            const backBtn = document.createElement("button");
+            backBtn.innerHTML = '<i class="fas fa-arrow-left"></i> 返回图库';
+            backBtn.style.background = "transparent";
+            backBtn.style.border = "none";
+            backBtn.style.color = "#ddd";
+            backBtn.style.cursor = "pointer";
+            backBtn.style.fontSize = "14px";
+            backBtn.style.display = "none"; // Hidden by default
+
+            navbar.appendChild(backBtn);
+            container.appendChild(navbar);
+
+            // Main Area
+            const mainArea = document.createElement("div");
+            mainArea.style.flexGrow = "1";
+            mainArea.style.position = "relative";
+            mainArea.style.overflow = "hidden";
+            container.appendChild(mainArea);
+
+            // Views
+            const galleryView = document.createElement("div");
+            galleryView.className = "photo-gallery";
+            galleryView.style.padding = "20px";
+            galleryView.style.display = "grid";
+            galleryView.style.gridTemplateColumns =
+              "repeat(auto-fill, minmax(120px, 1fr))";
+            galleryView.style.gap = "15px";
+            galleryView.style.overflowY = "auto";
+            galleryView.style.height = "100%";
+
+            const previewView = document.createElement("div");
+            previewView.style.display = "none";
+            previewView.style.width = "100%";
+            previewView.style.height = "100%";
+            previewView.style.justifyContent = "center";
+            previewView.style.alignItems = "center";
+            previewView.style.backgroundColor = "#000";
+
+            const previewImg = document.createElement("img");
+            previewImg.style.maxWidth = "100%";
+            previewImg.style.maxHeight = "100%";
+            previewImg.style.objectFit = "contain";
+
+            previewView.appendChild(previewImg);
+
+            mainArea.appendChild(galleryView);
+            mainArea.appendChild(previewView);
+
+            // Logic
+            const showGallery = () => {
+              galleryView.style.display = "grid";
+              previewView.style.display = "none";
+              backBtn.style.display = "none";
+            };
+
+            const showPreview = (src) => {
+              galleryView.style.display = "none";
+              previewView.style.display = "flex";
+              previewImg.src = src;
+              backBtn.style.display = "block";
+            };
+
+            backBtn.onclick = showGallery;
+
+            // Load Images
+            const loadImages = () => {
+              // Always load from Pictures folder for gallery
+              const pics = FS.ls(["home", "图片"]);
+              galleryView.innerHTML = "";
+
+              pics.forEach((p) => {
+                if (p.type === "file") {
+                  const src = FS.readFile(["home", "图片", p.name]);
+                  const thumb = document.createElement("div");
+                  thumb.style.height = "120px";
+                  thumb.style.backgroundImage = `url('${src}')`;
+                  thumb.style.backgroundSize = "cover";
+                  thumb.style.backgroundPosition = "center";
+                  thumb.style.cursor = "pointer";
+                  thumb.style.borderRadius = "4px";
+                  thumb.style.boxShadow = "0 2px 5px rgba(0,0,0,0.3)";
+                  thumb.style.transition = "transform 0.2s";
+
+                  thumb.onmouseover = () =>
+                    (thumb.style.transform = "scale(1.05)");
+                  thumb.onmouseout = () => (thumb.style.transform = "scale(1)");
+
+                  thumb.onclick = () => showPreview(src);
+
+                  galleryView.appendChild(thumb);
+                }
+              });
+            };
+
+            loadImages();
+
+            // routing
+            if (
+              path &&
+              (path[path.length - 1].endsWith("jpg") ||
+                path[path.length - 1].endsWith("png"))
+            ) {
+              const content = FS.readFile(path);
+              if (content) showPreview(content);
+            } else {
+              showGallery();
+            }
+
+            WM.createWindow("photos", "图片查看器", container, 800, 600);
+          },
+        },
+      };
+
+      // --- Init ---
+      function initDock() {
+        const dock = document.getElementById("dock");
+        Object.values(APPS).forEach((app) => {
+          const el = document.createElement("div");
+          el.className = "dock-item";
+          el.dataset.app = app.id;
+          el.innerHTML = `
+                <i class="fas ${app.icon}" style="color: ${app.color};"></i>
+                <div class="dock-tooltip">${app.title}</div>
+            `;
+          el.onclick = () => {
+            // If active and open, minimize/restore?
+            // Simple behavior: If not open, open. If open, focus.
+            const existing = WM.windows.find((w) => w.appId === app.id);
+            if (existing) {
+              if (existing.minimized) WM.restoreWindow(existing.id);
+              else if (WM.activeWindowId === existing.id)
+                WM.minimizeWindow(existing.id);
+              else WM.focusWindow(existing.id);
+            } else {
+              if (AppHandlers[app.id]) AppHandlers[app.id].open();
+            }
+          };
+          dock.appendChild(el);
+        });
+      }
+
+      function initClock() {
+        const update = () => {
+          const now = new Date();
+          const dateStr = now.toLocaleDateString("zh-CN", {
+            month: "long",
+            day: "numeric",
+          });
+          const timeStr = now.toLocaleTimeString("zh-CN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+          document.getElementById("clock").innerText = `${dateStr} ${timeStr}`;
+        };
+        setInterval(update, 1000);
+        update();
+      }
+
+      function initDesktopIcons() {
+        // Ensure desktop folder exists
+        let items = FS.ls(["home", "桌面"]);
+        if (!FS.resolve(["home", "桌面"])) {
+          FS.mkdir(["home"], "桌面");
+          FS.writeFile(
+            ["home", "桌面", "欢迎.txt"],
+            "欢迎使用 Ubuntu 网页系统！",
+          );
+          items = FS.ls(["home", "桌面"]);
+        }
+
+        const desktop = document.getElementById("desktop");
+        // Remove existing if any (for reload logic if we ever adding it)
+        const old = desktop.querySelector(".desktop-icon-container");
+        if (old) old.remove();
+
+        const container = document.createElement("div");
+        container.className = "desktop-icon-container";
+
+        items.forEach((item) => {
+          const el = document.createElement("div");
+          el.className = `desktop-icon ${item.type}`;
+          el.innerHTML = `
+                <i class="fas ${item.type === "folder" ? "fa-folder" : "fa-file-alt"}"></i>
+                <span class="desktop-icon-name">${item.name}</span>
+            `;
+
+          el.ondblclick = () => {
+            if (item.type === "folder") {
+              AppHandlers.files.open(["home", "桌面", item.name]);
+            } else {
+              if (item.name.endsWith(".txt"))
+                AppHandlers.editor.open(["home", "桌面", item.name]);
+              else if (item.name.endsWith(".py") || item.name.endsWith(".js"))
+                AppHandlers.code.open(["home", "桌面", item.name]);
+            }
+          };
+          container.appendChild(el);
+        });
+
+        desktop.insertBefore(container, desktop.firstChild);
+      }
+
+      // Initialize System
+      window.onload = () => {
+        initDock();
+        initDesktopIcons();
+        initClock();
+      };
+    </script>
+  </body>
+</html>

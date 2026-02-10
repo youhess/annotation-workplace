@@ -1,0 +1,3648 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebOS 桌面</title>
+    <style>
+      :root {
+        --taskbar-height: 60px;
+        --radius: 7px;
+        --shadow: 0 16px 34px rgba(0, 16, 42, 0.42);
+        --window-bg: #f4f8ff;
+        --window-border: #5e8fc6;
+        --titlebar-bg: linear-gradient(
+          180deg,
+          #53a1ea 0%,
+          #2d79cc 45%,
+          #195fac 100%
+        );
+        --text-main: #1a2945;
+        --text-soft: #52627f;
+        --accent: #1a69d2;
+        --accent-2: #2a9d57;
+        --desktop-a: #0151b8;
+        --desktop-b: #0464cb;
+        --desktop-c: #0b72d5;
+        --taskbar-bg: linear-gradient(
+          180deg,
+          rgba(56, 122, 191, 0.96) 0%,
+          rgba(38, 91, 153, 0.96) 56%,
+          rgba(28, 73, 130, 0.96) 100%
+        );
+        --panel-bg: linear-gradient(180deg, #f7fbff 0%, #e9f2ff 100%);
+        --panel-text: #11284c;
+        --input-bg: #ffffff;
+        --input-border: #9ab6db;
+        --row-hover: rgba(51, 122, 211, 0.18);
+        --success: #1f9d55;
+        --danger: #da3e52;
+      }
+
+      body.theme-sunset {
+        --desktop-a: #7a1f2b;
+        --desktop-b: #b84139;
+        --desktop-c: #dd9246;
+        --accent: #b13f31;
+        --accent-2: #cf8f28;
+        --taskbar-bg: linear-gradient(
+          180deg,
+          rgba(117, 52, 32, 0.95) 0%,
+          rgba(92, 39, 28, 0.95) 56%,
+          rgba(73, 28, 24, 0.95) 100%
+        );
+        --panel-bg: linear-gradient(180deg, #fff5ed 0%, #fce4d0 100%);
+        --window-border: #ad6b46;
+        --titlebar-bg: linear-gradient(
+          180deg,
+          #e18f63 0%,
+          #c96542 45%,
+          #9d4c31 100%
+        );
+      }
+
+      body.theme-graphite {
+        --desktop-a: #1a2c46;
+        --desktop-b: #2d4563;
+        --desktop-c: #3f5d7e;
+        --accent: #4a9eff;
+        --accent-2: #6dd3a1;
+        --taskbar-bg: linear-gradient(
+          180deg,
+          rgba(63, 88, 119, 0.95) 0%,
+          rgba(48, 68, 96, 0.95) 56%,
+          rgba(34, 52, 78, 0.95) 100%
+        );
+        --panel-bg: linear-gradient(180deg, #eff4fb 0%, #dfe7f2 100%);
+        --window-border: #5f7ca1;
+        --titlebar-bg: linear-gradient(
+          180deg,
+          #6c92be 0%,
+          #4a6f9b 45%,
+          #35547d 100%
+        );
+      }
+
+      * {
+        box-sizing: border-box;
+        user-select: none;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        color: var(--text-main);
+        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      }
+
+      body {
+        position: relative;
+        background:
+          radial-gradient(
+            140% 80% at 52% 56%,
+            rgba(126, 198, 255, 0.45),
+            rgba(7, 91, 189, 0.08) 45%,
+            rgba(1, 74, 169, 0) 68%
+          ),
+          radial-gradient(
+            160% 120% at 22% -24%,
+            rgba(255, 255, 255, 0.45),
+            rgba(255, 255, 255, 0) 50%
+          ),
+          linear-gradient(
+            140deg,
+            var(--desktop-a) 8%,
+            var(--desktop-b) 50%,
+            var(--desktop-c) 84%,
+            #0355ab 100%
+          );
+      }
+
+      body::before,
+      body::after {
+        content: "";
+        position: fixed;
+        inset: -8%;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      body::before {
+        background:
+          radial-gradient(
+            145% 86% at 17% 15%,
+            rgba(0, 0, 0, 0) 57%,
+            rgba(170, 223, 255, 0.48) 59%,
+            rgba(0, 0, 0, 0) 62%
+          ),
+          radial-gradient(
+            155% 90% at 66% 44%,
+            rgba(0, 0, 0, 0) 56%,
+            rgba(173, 228, 255, 0.42) 58%,
+            rgba(0, 0, 0, 0) 61%
+          ),
+          radial-gradient(
+            168% 90% at 46% 84%,
+            rgba(0, 0, 0, 0) 57%,
+            rgba(188, 234, 255, 0.35) 59%,
+            rgba(0, 0, 0, 0) 62%
+          );
+        opacity: 0.9;
+      }
+
+      body::after {
+        background: radial-gradient(
+          70% 40% at 50% 50%,
+          rgba(184, 230, 255, 0.2),
+          rgba(0, 0, 0, 0) 70%
+        );
+      }
+
+      #desktop {
+        position: fixed;
+        inset: 0 0 var(--taskbar-height) 0;
+        padding: 14px;
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 88px;
+        grid-template-rows: repeat(auto-fill, 90px);
+        justify-content: start;
+        align-content: start;
+        gap: 10px;
+        z-index: 1;
+      }
+
+      .desktop-icon {
+        width: 88px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        padding: 8px 6px;
+        text-align: center;
+        color: #ffffff;
+        background: transparent;
+        cursor: default;
+        transition:
+          background 0.18s ease,
+          transform 0.18s ease,
+          border-color 0.18s ease;
+      }
+
+      .desktop-icon:hover {
+        background: rgba(173, 217, 255, 0.24);
+        border-color: rgba(173, 217, 255, 0.55);
+        transform: translateY(-1px);
+      }
+
+      .icon-glyph {
+        width: 40px;
+        height: 40px;
+        margin: 0 auto 7px;
+        border-radius: 9px;
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        background: linear-gradient(
+          160deg,
+          rgba(255, 255, 255, 0.98),
+          rgba(214, 231, 255, 0.92)
+        );
+        color: #1c3d71;
+        font-weight: 700;
+        display: grid;
+        place-items: center;
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.22);
+      }
+
+      .icon-glyph .app-icon-svg,
+      .icon-glyph svg {
+        width: 20px;
+        height: 20px;
+        display: block;
+      }
+
+      .icon-title {
+        font-size: 12px;
+        line-height: 1.24;
+        word-break: break-word;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+      }
+
+      #window-host {
+        position: fixed;
+        inset: 0 0 var(--taskbar-height) 0;
+        pointer-events: none;
+        z-index: 4;
+      }
+
+      .window {
+        position: absolute;
+        border-radius: var(--radius);
+        overflow: hidden;
+        background: var(--window-bg);
+        border: 1px solid var(--window-border);
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        min-width: 320px;
+        min-height: 220px;
+        pointer-events: auto;
+        transition:
+          transform 0.16s ease,
+          opacity 0.16s ease;
+      }
+
+      .window.hidden-window {
+        display: none;
+      }
+
+      .window.active {
+        box-shadow: 0 20px 42px rgba(0, 16, 42, 0.48);
+      }
+
+      .titlebar {
+        height: 32px;
+        background: var(--titlebar-bg);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 0 0 10px;
+        border-bottom: 1px solid rgba(0, 31, 76, 0.36);
+        cursor: grab;
+      }
+
+      .titlebar:active {
+        cursor: grabbing;
+      }
+
+      .titlebar-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #f4f9ff;
+        text-shadow: 0 1px 0 rgba(0, 29, 80, 0.72);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding-right: 10px;
+      }
+
+      .win-controls {
+        display: flex;
+        gap: 0;
+        height: 100%;
+      }
+
+      .win-btn {
+        width: 44px;
+        height: 100%;
+        border: none;
+        border-left: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 0;
+        background: transparent;
+        color: #e6f1ff;
+        font-weight: 700;
+        cursor: pointer;
+        transition:
+          background 0.14s ease,
+          color 0.14s ease;
+      }
+
+      .win-btn:hover {
+        background: rgba(196, 228, 255, 0.24);
+      }
+
+      .win-btn.close:hover {
+        background: #c73b42;
+        color: #ffffff;
+      }
+
+      .window-body {
+        flex: 1;
+        min-height: 0;
+        background: #f5f8ff;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #taskbar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: var(--taskbar-height);
+        background: var(--taskbar-bg);
+        border-top: 1px solid rgba(176, 212, 255, 0.55);
+        box-shadow:
+          inset 0 1px 0 rgba(236, 247, 255, 0.55),
+          0 -1px 8px rgba(0, 29, 70, 0.45);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 10px;
+        color: #eaf1ff;
+        z-index: 9999;
+      }
+
+      #start-btn {
+        width: 40px;
+        height: 34px;
+        border-radius: 6px;
+        border: 1px solid rgba(154, 192, 234, 0.8);
+        background: linear-gradient(
+          180deg,
+          rgba(173, 210, 248, 0.95) 0%,
+          rgba(97, 150, 213, 0.95) 48%,
+          rgba(65, 119, 184, 0.95) 100%
+        );
+        color: #f1fff0;
+        padding: 0;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        transition:
+          transform 0.15s ease,
+          background 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+
+      #start-btn:hover {
+        transform: translateY(-1px);
+        background: linear-gradient(
+          180deg,
+          rgba(189, 221, 252, 0.98) 0%,
+          rgba(110, 164, 223, 0.98) 48%,
+          rgba(72, 126, 191, 0.98) 100%
+        );
+        box-shadow: 0 0 0 2px rgba(178, 214, 247, 0.35);
+      }
+
+      .win-start-logo {
+        width: 16px;
+        height: 16px;
+        display: block;
+        background:
+          linear-gradient(#8fd9ff, #8fd9ff) 0 0 / 7px 7px no-repeat,
+          linear-gradient(#8fd9ff, #8fd9ff) 9px 0 / 7px 7px no-repeat,
+          linear-gradient(#8fd9ff, #8fd9ff) 0 9px / 7px 7px no-repeat,
+          linear-gradient(#8fd9ff, #8fd9ff) 9px 9px / 7px 7px no-repeat;
+        filter: drop-shadow(0 1px 0 rgba(5, 44, 90, 0.35));
+      }
+
+      #pinned-apps,
+      #task-windows {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+      }
+
+      #task-windows {
+        flex: 1;
+        overflow-x: auto;
+        scrollbar-width: thin;
+      }
+
+      .task-icon,
+      .task-window-btn {
+        height: 32px;
+        border-radius: 5px;
+        border: 1px solid rgba(124, 171, 226, 0.65);
+        background: linear-gradient(
+          180deg,
+          rgba(114, 164, 224, 0.9) 0%,
+          rgba(78, 132, 199, 0.9) 100%
+        );
+        color: #f4f9ff;
+        text-shadow: 0 1px 0 rgba(15, 48, 90, 0.45);
+        padding: 0 10px;
+        cursor: pointer;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .task-icon {
+        width: 34px;
+        padding: 0;
+        display: grid;
+        place-items: center;
+      }
+
+      .task-icon .app-icon-svg,
+      .task-icon svg {
+        width: 16px;
+        height: 16px;
+        display: block;
+      }
+
+      .task-window-btn.active {
+        background: linear-gradient(
+          180deg,
+          rgba(206, 233, 255, 0.95) 0%,
+          rgba(140, 191, 236, 0.95) 100%
+        );
+        color: #174274;
+        text-shadow: none;
+        border-color: rgba(224, 239, 255, 0.95);
+      }
+
+      #tray {
+        margin-left: auto;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      #clock-chip {
+        border-radius: 5px;
+        border: 1px solid rgba(148, 190, 236, 0.7);
+        background: linear-gradient(
+          180deg,
+          rgba(103, 155, 216, 0.9) 0%,
+          rgba(71, 121, 185, 0.9) 100%
+        );
+        padding: 6px 10px;
+        font-size: 12px;
+        line-height: 1.1;
+        text-align: right;
+        cursor: pointer;
+      }
+
+      #start-menu {
+        position: fixed;
+        left: 10px;
+        bottom: calc(var(--taskbar-height) + 10px);
+        width: 300px;
+        max-height: 72vh;
+        border-radius: 10px;
+        background: var(--panel-bg);
+        color: var(--panel-text);
+        border: 1px solid rgba(111, 153, 205, 0.92);
+        box-shadow: 0 18px 35px rgba(0, 26, 68, 0.36);
+        padding: 12px;
+        overflow: auto;
+        z-index: 10000;
+      }
+
+      #start-menu.hidden {
+        display: none;
+      }
+
+      .start-title {
+        font-weight: 700;
+        margin: 0 0 10px;
+        padding: 2px 4px;
+      }
+
+      .start-item {
+        width: 100%;
+        border: 1px solid rgba(144, 178, 219, 0.65);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.78);
+        color: inherit;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition:
+          background 0.16s ease,
+          transform 0.12s ease;
+      }
+
+      .start-item:hover {
+        background: rgba(199, 224, 255, 0.85);
+        transform: translateX(1px);
+      }
+
+      .badge {
+        width: 24px;
+        height: 24px;
+        display: grid;
+        place-items: center;
+        border-radius: 7px;
+        background: linear-gradient(180deg, #fefefe, #d9e8ff);
+        color: #1f3f70;
+        border: 1px solid #9ebce1;
+        flex: 0 0 auto;
+      }
+
+      .badge .app-icon-svg,
+      .badge svg {
+        width: 14px;
+        height: 14px;
+        display: block;
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        border-bottom: 1px solid #bdd0e8;
+        background: linear-gradient(180deg, #f9fcff, #edf4ff);
+        flex-wrap: wrap;
+      }
+
+      .toolbar button,
+      .toolbar input,
+      .toolbar select {
+        height: 32px;
+        border-radius: 4px;
+        border: 1px solid var(--input-border);
+        padding: 0 10px;
+        font-size: 13px;
+        background: var(--input-bg);
+        color: #1f2e4a;
+      }
+
+      .toolbar button {
+        cursor: pointer;
+        background: linear-gradient(180deg, #ffffff, #e8f0fc);
+        transition:
+          background 0.15s ease,
+          transform 0.1s ease;
+      }
+
+      .toolbar button:hover {
+        background: linear-gradient(180deg, #ffffff, #dce9fb);
+      }
+
+      .toolbar button:active {
+        transform: translateY(1px);
+      }
+
+      .toolbar input {
+        flex: 1;
+        min-width: 140px;
+      }
+
+      .statusbar {
+        border-top: 1px solid #c4d3e8;
+        padding: 6px 10px;
+        font-size: 12px;
+        color: var(--text-soft);
+        background: #f1f6ff;
+      }
+      .file-list {
+        flex: 1;
+        overflow: auto;
+        padding: 6px;
+        background: #ffffff;
+      }
+
+      .file-row {
+        display: grid;
+        grid-template-columns: 1fr 100px 70px;
+        gap: 8px;
+        align-items: center;
+        padding: 7px 10px;
+        border-radius: 8px;
+        cursor: default;
+        font-size: 13px;
+      }
+
+      .file-row:hover {
+        background: var(--row-hover);
+      }
+
+      .file-row.selected {
+        background: rgba(159, 205, 255, 0.62);
+        outline: 1px solid rgba(66, 132, 207, 0.45);
+      }
+
+      .file-name {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        min-width: 0;
+      }
+
+      .file-name span:last-child {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .file-chip {
+        width: 20px;
+        height: 20px;
+        border-radius: 6px;
+        display: grid;
+        place-items: center;
+        font-size: 10px;
+        color: #1f2d48;
+        background: #dbe8ff;
+        flex: 0 0 auto;
+        font-weight: 700;
+      }
+
+      .text-editor {
+        flex: 1;
+        width: 100%;
+        border: none;
+        resize: none;
+        padding: 12px;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 14px;
+        line-height: 1.45;
+        background: #ffffff;
+        color: #1b273d;
+        outline: none;
+        user-select: text;
+      }
+
+      .editor-shell {
+        display: grid;
+        grid-template-rows: 1fr 150px;
+        height: 100%;
+        min-height: 0;
+      }
+
+      .editor-output {
+        margin: 0;
+        padding: 10px;
+        background: #0f1725;
+        color: #d9e2ff;
+        overflow: auto;
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 13px;
+        line-height: 1.35;
+        user-select: text;
+      }
+
+      .terminal-root {
+        display: grid;
+        grid-template-rows: 1fr auto;
+        height: 100%;
+        background: #0a0f17;
+        color: #d6e2ff;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 13px;
+      }
+
+      .terminal-output {
+        padding: 10px;
+        overflow: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+        user-select: text;
+      }
+
+      .terminal-line.error {
+        color: #ff9aa8;
+      }
+
+      .terminal-line.ok {
+        color: #8bd7a6;
+      }
+
+      .terminal-input-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        padding: 8px 10px;
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .terminal-prompt {
+        color: #74b8ff;
+        white-space: nowrap;
+      }
+
+      .terminal-input {
+        flex: 1;
+        border: none;
+        background: transparent;
+        color: #e7eeff;
+        font-family: inherit;
+        font-size: inherit;
+        outline: none;
+        user-select: text;
+      }
+
+      .browser-root {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        height: 100%;
+        min-height: 0;
+      }
+
+      .browser-frame {
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: #ffffff;
+      }
+
+      .helper-note {
+        font-size: 12px;
+        color: var(--text-soft);
+        padding: 6px 10px;
+        border-top: 1px solid #c4d3e8;
+        background: #f3f7ff;
+      }
+
+      .game-root {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        height: 100%;
+        min-height: 0;
+        padding: 10px;
+        gap: 10px;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.86),
+          rgba(239, 244, 255, 0.9)
+        );
+      }
+
+      .game-board {
+        width: min(360px, 100%);
+        aspect-ratio: 1 / 1;
+        background: #b9c6dd;
+        border-radius: 12px;
+        padding: 8px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+
+      .tile {
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.52);
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        font-size: 22px;
+        color: #24314d;
+      }
+
+      .tile.v0 {
+        background: rgba(255, 255, 255, 0.32);
+        color: transparent;
+      }
+      .tile.v2 {
+        background: #f3f6fd;
+      }
+      .tile.v4 {
+        background: #dce9ff;
+      }
+      .tile.v8 {
+        background: #afd3ff;
+        color: #19335f;
+      }
+      .tile.v16 {
+        background: #8ec2ff;
+        color: #0f2c59;
+      }
+      .tile.v32 {
+        background: #74d6d0;
+        color: #123d47;
+      }
+      .tile.v64 {
+        background: #45b58e;
+        color: #0f3125;
+      }
+      .tile.v128 {
+        background: #ffde8b;
+        color: #5d4310;
+        font-size: 20px;
+      }
+      .tile.v256 {
+        background: #ffc772;
+        color: #5c3707;
+        font-size: 20px;
+      }
+      .tile.v512 {
+        background: #ff9e66;
+        color: #5b1f0c;
+        font-size: 20px;
+      }
+      .tile.v1024 {
+        background: #ff7d8f;
+        color: #5a1020;
+        font-size: 18px;
+      }
+      .tile.v2048 {
+        background: #ef5f7a;
+        color: #fff3f6;
+        font-size: 18px;
+      }
+
+      .game-controls {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .paint-root {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        height: 100%;
+        min-height: 0;
+      }
+
+      .paint-canvas-wrap {
+        padding: 10px;
+        min-height: 0;
+        background: #e6ecf8;
+        display: grid;
+      }
+
+      #taskbar button,
+      .window button,
+      .window input,
+      .window textarea,
+      .window select {
+        font-family: inherit;
+      }
+
+      .paint-canvas {
+        width: 100%;
+        height: 100%;
+        min-height: 260px;
+        border: 1px solid #b7c3df;
+        border-radius: 10px;
+        background: #ffffff;
+        cursor: crosshair;
+      }
+
+      .video-root {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        height: 100%;
+        min-height: 0;
+      }
+
+      .video-wrap {
+        padding: 10px;
+        min-height: 0;
+        background: #0f1524;
+      }
+
+      .video-wrap video {
+        width: 100%;
+        height: 100%;
+        background: #000;
+        border-radius: 10px;
+      }
+
+      .calc-root {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        height: 100%;
+        background: linear-gradient(180deg, #f3f7ff, #ecf2ff);
+        padding: 12px;
+        gap: 12px;
+      }
+
+      .calc-display {
+        border: 1px solid #c5d3f0;
+        border-radius: 10px;
+        background: #ffffff;
+        padding: 10px;
+        font-size: 24px;
+        text-align: right;
+        min-height: 52px;
+        color: #1a2642;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        user-select: text;
+      }
+
+      .calc-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+
+      .calc-grid button {
+        border: 1px solid #c7d5ef;
+        border-radius: 10px;
+        background: #ffffff;
+        font-size: 18px;
+        cursor: pointer;
+        min-height: 44px;
+      }
+
+      .calc-grid button.op {
+        background: #e6efff;
+      }
+
+      .calc-grid button.eq {
+        background: #1a73e8;
+        color: #ffffff;
+        border-color: #1a73e8;
+      }
+
+      .clock-root {
+        display: grid;
+        grid-template-rows: auto auto auto 1fr;
+        gap: 8px;
+        padding: 14px;
+        background: linear-gradient(180deg, #f4f7ff, #ebf0fc);
+        height: 100%;
+        min-height: 0;
+      }
+
+      .calendar-controls {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .calendar-controls label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: #405374;
+      }
+
+      .calendar-controls select,
+      .calendar-controls button {
+        height: 30px;
+        border-radius: 4px;
+        border: 1px solid #9eb5d8;
+        background: #ffffff;
+        color: #1d2f4f;
+        padding: 0 8px;
+        font-size: 13px;
+      }
+
+      .calendar-controls button {
+        cursor: pointer;
+        background: linear-gradient(180deg, #ffffff, #e8f0fc);
+      }
+
+      .big-time {
+        font-size: 38px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: #1e2a44;
+      }
+
+      .big-date {
+        font-size: 16px;
+        color: #5b6780;
+      }
+
+      .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+        align-content: start;
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid #d2dced;
+        border-radius: 10px;
+        padding: 8px;
+        min-height: 0;
+        overflow: auto;
+      }
+
+      .calendar-cell {
+        text-align: center;
+        border-radius: 8px;
+        padding: 6px 0;
+        font-size: 12px;
+        background: rgba(255, 255, 255, 0.9);
+        color: #2a3754;
+      }
+
+      .calendar-cell.head {
+        background: #dce8ff;
+        font-weight: 700;
+      }
+
+      .calendar-cell.today {
+        background: #1a73e8;
+        color: #ffffff;
+        font-weight: 700;
+      }
+
+      .calendar-cell.selected {
+        box-shadow: 0 0 0 2px rgba(46, 114, 201, 0.52) inset;
+        font-weight: 700;
+      }
+
+      .settings-root {
+        padding: 12px;
+        display: grid;
+        grid-template-rows: auto auto 1fr;
+        gap: 12px;
+        height: 100%;
+        background: linear-gradient(180deg, #f7faff, #edf2ff);
+      }
+
+      .theme-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 10px;
+      }
+
+      .theme-card {
+        border: 1px solid #cbd7ef;
+        border-radius: 12px;
+        padding: 10px;
+        background: #ffffff;
+        cursor: pointer;
+      }
+
+      .theme-card.active {
+        border-color: #1a73e8;
+        box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+      }
+
+      .swatch {
+        width: 100%;
+        height: 62px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+      }
+
+      .image-root {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        height: 100%;
+        min-height: 0;
+        background: #1a2231;
+      }
+
+      .image-stage {
+        min-height: 0;
+        overflow: auto;
+        display: grid;
+        place-items: center;
+        padding: 10px;
+        position: relative;
+      }
+
+      .image-stage img {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 10px;
+        box-shadow: 0 12px 22px rgba(0, 0, 0, 0.35);
+        background: #111;
+      }
+
+      .image-empty {
+        color: #d3ddf0;
+        font-size: 14px;
+        border: 1px dashed rgba(194, 211, 238, 0.45);
+        border-radius: 10px;
+        padding: 12px 16px;
+        background: rgba(31, 46, 74, 0.5);
+      }
+
+      .muted {
+        color: var(--text-soft);
+        font-size: 12px;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      #system-dialog-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 20000;
+      }
+
+      .system-dialog-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(2, 18, 42, 0.44);
+        display: grid;
+        place-items: center;
+        padding: 12px;
+      }
+
+      .system-dialog {
+        width: min(420px, calc(100vw - 24px));
+        border: 1px solid #5e8fc6;
+        border-radius: 7px;
+        overflow: hidden;
+        background: #f5f9ff;
+        box-shadow: 0 20px 42px rgba(0, 12, 34, 0.5);
+      }
+
+      .system-dialog-title {
+        height: 32px;
+        padding: 0 10px;
+        display: flex;
+        align-items: center;
+        font-weight: 700;
+        color: #f4f9ff;
+        text-shadow: 0 1px 0 rgba(0, 31, 76, 0.72);
+        background: var(--titlebar-bg);
+        border-bottom: 1px solid rgba(0, 31, 76, 0.36);
+      }
+
+      .system-dialog-body {
+        padding: 14px 14px 6px;
+        color: #1f2d47;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .system-dialog-message {
+        user-select: text;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .system-dialog-input {
+        width: 100%;
+        margin-top: 12px;
+        height: 34px;
+        border-radius: 4px;
+        border: 1px solid #99b7de;
+        background: #ffffff;
+        color: #1f2e4a;
+        padding: 0 10px;
+        font-size: 13px;
+        outline: none;
+        user-select: text;
+      }
+
+      .system-dialog-input:focus {
+        border-color: #2e7bd2;
+        box-shadow: 0 0 0 2px rgba(46, 123, 210, 0.2);
+      }
+
+      .system-dialog-actions {
+        padding: 10px 14px 14px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .system-dialog-actions button {
+        min-width: 78px;
+        height: 32px;
+        border-radius: 4px;
+        border: 1px solid #8faed6;
+        background: linear-gradient(180deg, #ffffff, #e8f0fc);
+        color: #1f3255;
+        cursor: pointer;
+        padding: 0 10px;
+      }
+
+      .system-dialog-actions button.primary {
+        border-color: #2d73bf;
+        color: #ffffff;
+        background: linear-gradient(180deg, #5ea8ef, #2e78ca);
+      }
+
+      .system-dialog-actions button:hover {
+        filter: brightness(1.02);
+      }
+
+      .system-dialog-actions button:active {
+        transform: translateY(1px);
+      }
+
+      @media (max-width: 900px) {
+        #desktop {
+          grid-auto-columns: 74px;
+          grid-template-rows: repeat(auto-fill, 78px);
+        }
+
+        .desktop-icon {
+          width: 74px;
+          padding: 6px 4px;
+        }
+
+        .icon-glyph {
+          width: 36px;
+          height: 36px;
+        }
+
+        #start-menu {
+          width: min(92vw, 320px);
+        }
+      }
+    </style>
+  </head>
+  <body class="theme-aurora">
+    <div id="desktop"></div>
+    <div id="window-host"></div>
+
+    <div id="start-menu" class="hidden">
+      <div class="start-title">应用程序</div>
+      <div id="start-list"></div>
+    </div>
+
+    <div id="taskbar">
+      <button id="start-btn" aria-label="开始" title="开始">
+        <span class="win-start-logo" aria-hidden="true"></span>
+      </button>
+      <div id="pinned-apps"></div>
+      <div id="task-windows"></div>
+      <div id="tray">
+        <div id="clock-chip"></div>
+      </div>
+    </div>
+
+    <div id="system-dialog-layer" class="hidden"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+    <script>
+      if (!window.lucide) {
+        document.write(
+          '<script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"><\\/script>',
+        );
+      }
+    </script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <script>
+      (() => {
+        const STORAGE_KEYS = {
+          fs: "webos.fs.v1",
+          theme: "webos.theme.v1",
+        };
+
+        const APP_INFO = {
+          explorer: { name: "文件资源管理器", icon: "folder-open" },
+          notepad: { name: "记事本", icon: "file-text" },
+          code: { name: "代码编辑器", icon: "code" },
+          terminal: { name: "终端", icon: "terminal" },
+          browser: { name: "浏览器", icon: "globe" },
+          game2048: { name: "2048", icon: "gamepad-2" },
+          paint: { name: "画板", icon: "paintbrush" },
+          video: { name: "视频播放器", icon: "video" },
+          calculator: { name: "计算器", icon: "calculator" },
+          clock: { name: "时钟", icon: "clock-3" },
+          settings: { name: "设置", icon: "settings" },
+          image: { name: "图片查看器", icon: "image" },
+        };
+
+        const desktopApps = [
+          "explorer",
+          "notepad",
+          "code",
+          "terminal",
+          "browser",
+          "paint",
+          "video",
+          "game2048",
+          "calculator",
+          "clock",
+          "settings",
+        ];
+
+        const pinnedApps = [
+          "explorer",
+          "terminal",
+          "browser",
+          "notepad",
+          "code",
+        ];
+
+        const themeOptions = [
+          {
+            key: "aurora",
+            title: "极光",
+            gradient: "linear-gradient(135deg,#0151b8,#0464cb,#0b72d5)",
+          },
+          {
+            key: "sunset",
+            title: "晚霞",
+            gradient: "linear-gradient(135deg,#7a1f2b,#b84139,#dd9246)",
+          },
+          {
+            key: "graphite",
+            title: "石墨",
+            gradient: "linear-gradient(135deg,#1a2c46,#2d4563,#3f5d7e)",
+          },
+        ];
+
+        const state = {
+          fs: null,
+          windows: new Map(),
+          zCounter: 20,
+          winCounter: 0,
+          focusedId: null,
+          pythonReady: null,
+          pythonQueue: Promise.resolve(),
+          dialogQueue: Promise.resolve(),
+        };
+
+        const desktopEl = document.getElementById("desktop");
+        const hostEl = document.getElementById("window-host");
+        const startMenuEl = document.getElementById("start-menu");
+        const startListEl = document.getElementById("start-list");
+        const startBtnEl = document.getElementById("start-btn");
+        const pinnedEl = document.getElementById("pinned-apps");
+        const taskWindowsEl = document.getElementById("task-windows");
+        const clockChipEl = document.getElementById("clock-chip");
+        const systemDialogLayerEl = document.getElementById(
+          "system-dialog-layer",
+        );
+
+        function folder(name, children = {}) {
+          return { type: "folder", name, children };
+        }
+
+        function file(name, content = "", mime = "text/plain") {
+          return { type: "file", name, content, mime };
+        }
+
+        function createDefaultFS() {
+          return folder("", {
+            Desktop: folder("Desktop"),
+            Documents: folder("Documents", {
+              "welcome.txt": file(
+                "welcome.txt",
+                "欢迎使用 WebOS。\n\n你可以在文件资源管理器中创建文件，在记事本中编辑，在终端或代码编辑器中运行 Python，所有数据都会保存在 localStorage 中。\n",
+                "text/plain",
+              ),
+              "demo.py": file(
+                "demo.py",
+                "name = 'WebOS'\nfor i in range(3):\n    print(f'Hello from {name}:', i + 1)\n",
+                "text/x-python",
+              ),
+            }),
+            Pictures: folder("Pictures", {
+              "mountain.jpg": file(
+                "mountain.jpg",
+                "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1400&q=80",
+                "image/url",
+              ),
+            }),
+            Videos: folder("Videos", {
+              "flower.mp4": file(
+                "flower.mp4",
+                "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+                "video/url",
+              ),
+            }),
+          });
+        }
+
+        function loadFS() {
+          const raw = localStorage.getItem(STORAGE_KEYS.fs);
+          if (!raw) {
+            return createDefaultFS();
+          }
+          try {
+            const parsed = JSON.parse(raw);
+            if (!parsed || parsed.type !== "folder") {
+              return createDefaultFS();
+            }
+            return parsed;
+          } catch {
+            return createDefaultFS();
+          }
+        }
+
+        function saveFS() {
+          localStorage.setItem(STORAGE_KEYS.fs, JSON.stringify(state.fs));
+        }
+
+        function pathParts(path) {
+          return path.split("/").filter(Boolean);
+        }
+
+        function normalizePath(input, cwd = "/") {
+          const raw = (input || ".").trim();
+          const base = raw.startsWith("/")
+            ? raw
+            : cwd === "/"
+              ? `/${raw}`
+              : `${cwd}/${raw}`;
+          const out = [];
+          for (const chunk of base.split("/")) {
+            if (!chunk || chunk === ".") continue;
+            if (chunk === "..") {
+              out.pop();
+            } else {
+              out.push(chunk);
+            }
+          }
+          return "/" + out.join("/");
+        }
+
+        function parentPath(path) {
+          if (path === "/") return null;
+          const parts = pathParts(path);
+          parts.pop();
+          return "/" + parts.join("/");
+        }
+
+        function baseName(path) {
+          const parts = pathParts(path);
+          return parts[parts.length - 1] || "";
+        }
+
+        function getNode(path) {
+          const abs = normalizePath(path);
+          if (abs === "/") return state.fs;
+          let node = state.fs;
+          for (const part of pathParts(abs)) {
+            if (!node || node.type !== "folder") return null;
+            node = node.children[part];
+          }
+          return node || null;
+        }
+
+        function listDir(path) {
+          const node = getNode(path);
+          if (!node || node.type !== "folder") {
+            throw new Error("Not a folder");
+          }
+          const rows = Object.values(node.children || {}).map((entry) => ({
+            name: entry.name,
+            type: entry.type,
+            mime: entry.mime || "",
+            size:
+              entry.type === "file"
+                ? String(entry.content ? entry.content.length : 0)
+                : "-",
+          }));
+          rows.sort((a, b) => {
+            if (a.type !== b.type) return a.type === "folder" ? -1 : 1;
+            return a.name.localeCompare(b.name);
+          });
+          return rows;
+        }
+
+        function createFolder(path) {
+          const abs = normalizePath(path);
+          if (abs === "/") throw new Error("Cannot create root");
+          const pPath = parentPath(abs);
+          const name = baseName(abs);
+          const parent = getNode(pPath);
+          if (!parent || parent.type !== "folder") {
+            throw new Error("Parent folder not found");
+          }
+          if (parent.children[name]) {
+            throw new Error("Item already exists");
+          }
+          parent.children[name] = folder(name);
+          saveFS();
+        }
+
+        function writeFile(path, content, mime) {
+          const abs = normalizePath(path);
+          if (abs === "/") throw new Error("Invalid path");
+          const pPath = parentPath(abs);
+          const name = baseName(abs);
+          const parent = getNode(pPath);
+          if (!parent || parent.type !== "folder") {
+            throw new Error("Parent folder not found");
+          }
+          const existing = parent.children[name];
+          if (existing && existing.type !== "file") {
+            throw new Error("A folder exists with that name");
+          }
+          const finalMime = mime || guessMime(name);
+          parent.children[name] = file(name, content, finalMime);
+          saveFS();
+        }
+
+        function deleteEntry(path) {
+          const abs = normalizePath(path);
+          if (abs === "/") throw new Error("Cannot delete root");
+          const pPath = parentPath(abs);
+          const name = baseName(abs);
+          const parent = getNode(pPath);
+          if (!parent || parent.type !== "folder" || !parent.children[name]) {
+            throw new Error("Entry not found");
+          }
+          delete parent.children[name];
+          saveFS();
+        }
+
+        function guessExt(name) {
+          const idx = name.lastIndexOf(".");
+          return idx >= 0 ? name.slice(idx + 1).toLowerCase() : "";
+        }
+
+        function guessMime(name) {
+          const ext = guessExt(name);
+          if (["txt", "md", "json", "csv", "log"].includes(ext))
+            return "text/plain";
+          if (ext === "py") return "text/x-python";
+          if (["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"].includes(ext))
+            return "image/url";
+          if (["mp4", "webm", "ogg"].includes(ext)) return "video/url";
+          if (ext === "html") return "text/html";
+          return "text/plain";
+        }
+
+        function isTextLike(path, node) {
+          if (!node || node.type !== "file") return false;
+          const ext = guessExt(path);
+          if (
+            [
+              "txt",
+              "md",
+              "json",
+              "csv",
+              "log",
+              "html",
+              "css",
+              "js",
+              "py",
+            ].includes(ext)
+          )
+            return true;
+          return node.mime.startsWith("text/");
+        }
+
+        function isImage(path) {
+          return ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"].includes(
+            guessExt(path),
+          );
+        }
+
+        function isVideo(path) {
+          return ["mp4", "webm", "ogg"].includes(guessExt(path));
+        }
+
+        function shortPath(path, max = 32) {
+          if (path.length <= max) return path;
+          return "..." + path.slice(path.length - max + 3);
+        }
+
+        function formatEntryType(type) {
+          return type === "folder" ? "文件夹" : "文件";
+        }
+
+        function escapeHtml(text) {
+          return String(text)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+
+        function getAppIconSvg(key) {
+          const info = APP_INFO[key] || {};
+          const iconName = info.icon || "app-window";
+          return `<i class="app-icon-slot" data-lucide="${escapeHtml(iconName)}" aria-hidden="true"></i>`;
+        }
+
+        function renderLucideIcons() {
+          if (!window.lucide || typeof window.lucide.createIcons !== "function") {
+            return;
+          }
+          window.lucide.createIcons({
+            nameAttr: "data-lucide",
+            attrs: {
+              class: "app-icon-svg",
+              "stroke-width": 2,
+              "aria-hidden": "true",
+              focusable: "false",
+            },
+          });
+        }
+
+        function enqueueDialog(work) {
+          state.dialogQueue = state.dialogQueue.then(work, work);
+          return state.dialogQueue;
+        }
+
+        function showSystemDialog(options = {}) {
+          return enqueueDialog(
+            () =>
+              new Promise((resolve) => {
+                const mode = options.mode || "alert";
+                const title = options.title || "系统消息";
+                const message = String(options.message || "");
+                const okText = options.okText || "OK";
+                const cancelText = options.cancelText || "Cancel";
+                const defaultValue = String(options.defaultValue || "");
+
+                const backdrop = document.createElement("div");
+                backdrop.className = "system-dialog-backdrop";
+
+                const dialog = document.createElement("div");
+                dialog.className = "system-dialog";
+                dialog.innerHTML = `
+            <div class="system-dialog-title"></div>
+            <div class="system-dialog-body">
+              <div class="system-dialog-message"></div>
+              ${mode === "prompt" ? '<input class="system-dialog-input" data-el="input" />' : ""}
+            </div>
+            <div class="system-dialog-actions">
+              ${mode === "alert" ? "" : `<button data-act="cancel">${escapeHtml(cancelText)}</button>`}
+              <button class="primary" data-act="ok">${escapeHtml(okText)}</button>
+            </div>
+          `;
+                dialog.querySelector(".system-dialog-title").textContent =
+                  title;
+                dialog.querySelector(".system-dialog-message").textContent =
+                  message;
+
+                const inputEl = dialog.querySelector('[data-el="input"]');
+                if (inputEl) {
+                  inputEl.value = defaultValue;
+                }
+
+                const okBtn = dialog.querySelector('[data-act="ok"]');
+                const cancelBtn = dialog.querySelector('[data-act="cancel"]');
+
+                function cleanup() {
+                  document.removeEventListener("keydown", onKeyDown, true);
+                  backdrop.remove();
+                  if (!systemDialogLayerEl.children.length) {
+                    systemDialogLayerEl.classList.add("hidden");
+                  }
+                }
+
+                function finish(value) {
+                  cleanup();
+                  resolve(value);
+                }
+
+                function onKeyDown(event) {
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    if (mode === "confirm") finish(false);
+                    else if (mode === "prompt") finish(null);
+                    else finish(undefined);
+                    return;
+                  }
+                  if (event.key === "Enter") {
+                    if (mode === "prompt" && event.target === inputEl) {
+                      event.preventDefault();
+                      finish(inputEl.value);
+                      return;
+                    }
+                    if (
+                      event.target &&
+                      event.target.closest &&
+                      event.target.closest("#system-dialog-layer")
+                    ) {
+                      event.preventDefault();
+                      if (mode === "confirm") finish(true);
+                      else if (mode === "prompt")
+                        finish(inputEl ? inputEl.value : "");
+                      else finish(undefined);
+                    }
+                  }
+                }
+
+                okBtn.addEventListener("click", () => {
+                  if (mode === "confirm") finish(true);
+                  else if (mode === "prompt")
+                    finish(inputEl ? inputEl.value : "");
+                  else finish(undefined);
+                });
+
+                if (cancelBtn) {
+                  cancelBtn.addEventListener("click", () => {
+                    if (mode === "confirm") finish(false);
+                    else finish(null);
+                  });
+                }
+
+                systemDialogLayerEl.classList.remove("hidden");
+                systemDialogLayerEl.innerHTML = "";
+                backdrop.appendChild(dialog);
+                systemDialogLayerEl.appendChild(backdrop);
+                document.addEventListener("keydown", onKeyDown, true);
+
+                if (inputEl) {
+                  setTimeout(() => {
+                    inputEl.focus();
+                    inputEl.select();
+                  }, 0);
+                } else {
+                  setTimeout(() => okBtn.focus(), 0);
+                }
+              }),
+          );
+        }
+
+        function showAlert(message, title = "系统消息") {
+          return showSystemDialog({
+            mode: "alert",
+            title,
+            message,
+          });
+        }
+
+        function showConfirm(message, title = "确认") {
+          return showSystemDialog({
+            mode: "confirm",
+            title,
+            message,
+          });
+        }
+
+        function showPrompt(message, defaultValue = "", title = "输入") {
+          return showSystemDialog({
+            mode: "prompt",
+            title,
+            message,
+            defaultValue,
+          });
+        }
+
+        function focusWindow(id) {
+          const target = state.windows.get(id);
+          if (!target) return;
+          state.focusedId = id;
+          state.zCounter += 1;
+          target.el.style.zIndex = String(state.zCounter);
+          for (const [wid, entry] of state.windows) {
+            entry.el.classList.toggle("active", wid === id);
+          }
+          updateTaskButtons();
+        }
+
+        function updateTaskButtons() {
+          for (const [id, entry] of state.windows) {
+            entry.taskBtn.classList.toggle(
+              "active",
+              id === state.focusedId && !entry.minimized,
+            );
+            entry.taskBtn.title = entry.title;
+          }
+        }
+
+        function closeWindow(id) {
+          const entry = state.windows.get(id);
+          if (!entry) return;
+          if (entry.cleanupFns.length) {
+            for (const fn of entry.cleanupFns) {
+              try {
+                fn();
+              } catch {}
+            }
+          }
+          entry.taskBtn.remove();
+          entry.el.remove();
+          state.windows.delete(id);
+          if (state.focusedId === id) {
+            state.focusedId = null;
+            let top = null;
+            for (const [wid, item] of state.windows) {
+              if (item.minimized) continue;
+              if (
+                !top ||
+                Number(item.el.style.zIndex) > Number(top.el.style.zIndex)
+              ) {
+                top = { id: wid, el: item.el };
+              }
+            }
+            if (top) focusWindow(top.id);
+          }
+        }
+
+        function minimizeWindow(id) {
+          const entry = state.windows.get(id);
+          if (!entry) return;
+          entry.minimized = true;
+          entry.el.classList.add("hidden-window");
+          if (state.focusedId === id) {
+            state.focusedId = null;
+          }
+          updateTaskButtons();
+        }
+
+        function restoreWindow(id) {
+          const entry = state.windows.get(id);
+          if (!entry) return;
+          entry.minimized = false;
+          entry.el.classList.remove("hidden-window");
+          focusWindow(id);
+        }
+
+        function toggleMaximize(id) {
+          const entry = state.windows.get(id);
+          if (!entry) return;
+          const el = entry.el;
+          if (!entry.maximized) {
+            entry.maximized = true;
+            entry.prevRect = {
+              left: el.style.left,
+              top: el.style.top,
+              width: el.style.width,
+              height: el.style.height,
+            };
+            el.style.left = "6px";
+            el.style.top = "6px";
+            el.style.width = "calc(100vw - 12px)";
+            el.style.height = `calc(100vh - var(--taskbar-height) - 12px)`;
+          } else {
+            entry.maximized = false;
+            if (entry.prevRect) {
+              el.style.left = entry.prevRect.left;
+              el.style.top = entry.prevRect.top;
+              el.style.width = entry.prevRect.width;
+              el.style.height = entry.prevRect.height;
+            }
+          }
+        }
+
+        function createWindow(config) {
+          const id = `w-${++state.winCounter}`;
+          const offset = ((state.winCounter - 1) * 22) % 240;
+          const width = config.width || 760;
+          const height = config.height || 520;
+          const x = config.x ?? 80 + offset;
+          const y = config.y ?? 44 + offset;
+
+          const win = document.createElement("section");
+          win.className = "window";
+          win.style.width = `${width}px`;
+          win.style.height = `${height}px`;
+          win.style.left = `${x}px`;
+          win.style.top = `${y}px`;
+          win.setAttribute("data-win-id", id);
+          win.tabIndex = 0;
+
+          const titlebar = document.createElement("div");
+          titlebar.className = "titlebar";
+          titlebar.innerHTML = `
+          <div class="titlebar-title">${escapeHtml(config.title || "Window")}</div>
+          <div class="win-controls">
+            <button class="win-btn min" title="Minimize">_</button>
+            <button class="win-btn max" title="Maximize">[]</button>
+            <button class="win-btn close" title="Close">X</button>
+          </div>
+        `;
+
+          const body = document.createElement("div");
+          body.className = "window-body";
+          win.appendChild(titlebar);
+          win.appendChild(body);
+          hostEl.appendChild(win);
+
+          const taskBtn = document.createElement("button");
+          taskBtn.className = "task-window-btn";
+          taskBtn.textContent = config.title || "Window";
+          taskWindowsEl.appendChild(taskBtn);
+
+          const entry = {
+            id,
+            el: win,
+            body,
+            taskBtn,
+            title: config.title || "Window",
+            minimized: false,
+            maximized: false,
+            prevRect: null,
+            cleanupFns: [],
+          };
+          state.windows.set(id, entry);
+
+          const titleEl = titlebar.querySelector(".titlebar-title");
+          function setTitle(nextTitle) {
+            entry.title = nextTitle;
+            titleEl.textContent = nextTitle;
+            taskBtn.textContent = nextTitle;
+            updateTaskButtons();
+          }
+
+          titlebar.querySelector(".min").addEventListener("click", (e) => {
+            e.stopPropagation();
+            minimizeWindow(id);
+          });
+          titlebar.querySelector(".max").addEventListener("click", (e) => {
+            e.stopPropagation();
+            toggleMaximize(id);
+            focusWindow(id);
+          });
+          titlebar.querySelector(".close").addEventListener("click", (e) => {
+            e.stopPropagation();
+            closeWindow(id);
+          });
+
+          taskBtn.addEventListener("click", () => {
+            const item = state.windows.get(id);
+            if (!item) return;
+            if (item.minimized) restoreWindow(id);
+            else if (state.focusedId === id) minimizeWindow(id);
+            else focusWindow(id);
+          });
+
+          win.addEventListener("mousedown", () => focusWindow(id));
+          win.addEventListener("dblclick", (e) => {
+            if (e.target.closest(".titlebar")) {
+              toggleMaximize(id);
+              focusWindow(id);
+            }
+          });
+
+          let drag = null;
+          titlebar.addEventListener("mousedown", (e) => {
+            if (e.button !== 0) return;
+            if (e.target.closest(".win-controls")) return;
+            const item = state.windows.get(id);
+            if (!item || item.maximized) return;
+            focusWindow(id);
+            drag = {
+              sx: e.clientX,
+              sy: e.clientY,
+              ox: parseInt(item.el.style.left, 10) || 0,
+              oy: parseInt(item.el.style.top, 10) || 0,
+            };
+            document.body.style.cursor = "grabbing";
+          });
+
+          document.addEventListener("mousemove", (e) => {
+            if (!drag) return;
+            const item = state.windows.get(id);
+            if (!item || item.maximized) return;
+            const nx = drag.ox + (e.clientX - drag.sx);
+            const ny = drag.oy + (e.clientY - drag.sy);
+            const maxX = Math.max(0, window.innerWidth - item.el.offsetWidth);
+            const maxY = Math.max(
+              0,
+              window.innerHeight -
+                parseInt(
+                  getComputedStyle(document.body).getPropertyValue(
+                    "--taskbar-height",
+                  ),
+                ) -
+                item.el.offsetHeight,
+            );
+            item.el.style.left = `${Math.min(Math.max(0, nx), maxX)}px`;
+            item.el.style.top = `${Math.min(Math.max(0, ny), maxY)}px`;
+          });
+
+          document.addEventListener("mouseup", () => {
+            if (drag) {
+              drag = null;
+              document.body.style.cursor = "";
+            }
+          });
+
+          focusWindow(id);
+
+          return {
+            id,
+            body,
+            setTitle,
+            onClose(fn) {
+              entry.cleanupFns.push(fn);
+            },
+            focus() {
+              focusWindow(id);
+            },
+          };
+        }
+
+        function parseArgs(line) {
+          const out = [];
+          let current = "";
+          let quote = null;
+          for (let i = 0; i < line.length; i += 1) {
+            const ch = line[i];
+            if (quote) {
+              if (ch === quote) {
+                quote = null;
+              } else {
+                current += ch;
+              }
+            } else if (ch === "'" || ch === '"') {
+              quote = ch;
+            } else if (/\s/.test(ch)) {
+              if (current) {
+                out.push(current);
+                current = "";
+              }
+            } else {
+              current += ch;
+            }
+          }
+          if (current) out.push(current);
+          return out;
+        }
+
+        async function ensurePython() {
+          if (state.pythonReady) {
+            return state.pythonReady;
+          }
+          if (typeof loadPyodide !== "function") {
+            throw new Error("Pyodide failed to load. Check network access.");
+          }
+          state.pythonReady = loadPyodide({
+            indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/",
+          });
+          return state.pythonReady;
+        }
+
+        function queuePython(code, hooks = {}) {
+          state.pythonQueue = state.pythonQueue.then(async () => {
+            const py = await ensurePython();
+            py.setStdout({
+              batched: (text) => hooks.stdout && hooks.stdout(String(text)),
+            });
+            py.setStderr({
+              batched: (text) => hooks.stderr && hooks.stderr(String(text)),
+            });
+            let result;
+            try {
+              result = await py.runPythonAsync(code);
+            } catch (err) {
+              if (hooks.stderr) hooks.stderr(String(err));
+              return;
+            }
+            if (result !== undefined && result !== null && hooks.stdout) {
+              hooks.stdout(String(result));
+            }
+          });
+          return state.pythonQueue;
+        }
+
+        async function openFileByType(path) {
+          const node = getNode(path);
+          if (!node || node.type !== "file") return;
+          const ext = guessExt(path);
+          if (ext === "py") {
+            openCodeEditor({ path });
+            return;
+          }
+          if (isImage(path)) {
+            openImageViewer({ path });
+            return;
+          }
+          if (isVideo(path)) {
+            openVideoPlayer({ path });
+            return;
+          }
+          if (ext === "url") {
+            openBrowser({ url: node.content.trim() });
+            return;
+          }
+          if (isTextLike(path, node)) {
+            openNotepad({ path });
+            return;
+          }
+          await showAlert("该文件类型没有关联应用。");
+        }
+
+        function openExplorer(opts = {}) {
+          const win = createWindow({
+            title: "文件资源管理器",
+            width: 820,
+            height: 560,
+          });
+
+          let currentPath = normalizePath(opts.path || "/");
+          let selectedName = null;
+
+          win.body.innerHTML = `
+          <div class="toolbar">
+            <button data-act="up">上一级</button>
+            <button data-act="new-file">新建文件</button>
+            <button data-act="new-folder">新建文件夹</button>
+            <button data-act="delete">删除</button>
+            <input data-el="path" value="${escapeHtml(currentPath)}" />
+            <button data-act="go">前往</button>
+            <button data-act="refresh">刷新</button>
+          </div>
+          <div class="file-list" data-el="list"></div>
+          <div class="statusbar" data-el="status"></div>
+        `;
+
+          const pathInput = win.body.querySelector('[data-el="path"]');
+          const listEl = win.body.querySelector('[data-el="list"]');
+          const statusEl = win.body.querySelector('[data-el="status"]');
+
+          function fullOf(name) {
+            return normalizePath(name, currentPath);
+          }
+
+          function render() {
+            selectedName = null;
+            pathInput.value = currentPath;
+            let rows;
+            try {
+              rows = listDir(currentPath);
+            } catch {
+              rows = [];
+            }
+            listEl.innerHTML = "";
+            rows.forEach((item) => {
+              const row = document.createElement("div");
+              row.className = "file-row";
+              row.innerHTML = `
+              <div class="file-name">
+                <span class="file-chip">${item.type === "folder" ? "目录" : guessExt(item.name).slice(0, 3).toUpperCase() || "文件"}</span>
+                <span>${escapeHtml(item.name)}</span>
+              </div>
+              <div>${formatEntryType(item.type)}</div>
+              <div>${item.size}</div>
+            `;
+              row.addEventListener("click", () => {
+                selectedName = item.name;
+                [...listEl.querySelectorAll(".file-row")].forEach((r) =>
+                  r.classList.remove("selected"),
+                );
+                row.classList.add("selected");
+                statusEl.textContent = `${formatEntryType(item.type)}: ${fullOf(item.name)}`;
+              });
+              row.addEventListener("dblclick", async () => {
+                if (item.type === "folder") {
+                  currentPath = fullOf(item.name);
+                  render();
+                } else {
+                  await openFileByType(fullOf(item.name));
+                }
+              });
+              listEl.appendChild(row);
+            });
+            statusEl.textContent = `路径: ${currentPath} | 项目数: ${rows.length}`;
+          }
+
+          win.body
+            .querySelector('[data-act="up"]')
+            .addEventListener("click", () => {
+              if (currentPath === "/") return;
+              currentPath = parentPath(currentPath) || "/";
+              render();
+            });
+
+          win.body
+            .querySelector('[data-act="go"]')
+            .addEventListener("click", async () => {
+              const target = normalizePath(pathInput.value || "/", currentPath);
+              const node = getNode(target);
+              if (!node || node.type !== "folder") {
+                await showAlert("文件夹不存在", "文件资源管理器");
+                return;
+              }
+              currentPath = target;
+              render();
+            });
+
+          win.body
+            .querySelector('[data-act="refresh"]')
+            .addEventListener("click", render);
+
+          win.body
+            .querySelector('[data-act="new-folder"]')
+            .addEventListener("click", async () => {
+              const name = await showPrompt("文件夹名称：", "", "新建文件夹");
+              if (!name) return;
+              try {
+                createFolder(fullOf(name));
+                render();
+              } catch (err) {
+                await showAlert(err.message, "文件资源管理器");
+              }
+            });
+
+          win.body
+            .querySelector('[data-act="new-file"]')
+            .addEventListener("click", async () => {
+              const name = await showPrompt(
+                "文件名（示例：notes.txt、script.py、image.jpg、video.mp4）：",
+                "",
+                "新建文件",
+              );
+              if (!name) return;
+              const ext = guessExt(name);
+              let content = "";
+              if (isImage(name)) {
+                content =
+                  (await showPrompt(
+                    "图片 URL 或 data URL：",
+                    "https://picsum.photos/1000/700",
+                    "图片来源",
+                  )) || "";
+              } else if (isVideo(name)) {
+                content =
+                  (await showPrompt(
+                    "视频 URL：",
+                    "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+                    "视频来源",
+                  )) || "";
+              } else if (ext === "py") {
+                content = "print('new python file')\n";
+              } else {
+                content =
+                  (await showPrompt("文件初始内容：", "", "新建文件")) ||
+                  "";
+              }
+              try {
+                writeFile(fullOf(name), content, guessMime(name));
+                render();
+              } catch (err) {
+                await showAlert(err.message, "文件资源管理器");
+              }
+            });
+
+          win.body
+            .querySelector('[data-act="delete"]')
+            .addEventListener("click", async () => {
+              if (!selectedName) {
+                await showAlert("请先选择一个项目。", "文件资源管理器");
+                return;
+              }
+              const target = fullOf(selectedName);
+              if (!(await showConfirm(`确认删除 ${target} 吗？`, "删除"))) return;
+              try {
+                deleteEntry(target);
+                render();
+              } catch (err) {
+                await showAlert(err.message, "文件资源管理器");
+              }
+            });
+
+          pathInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+              win.body.querySelector('[data-act="go"]').click();
+            }
+          });
+
+          render();
+        }
+
+        function openNotepad(opts = {}) {
+          const win = createWindow({
+            title: "记事本",
+            width: 780,
+            height: 560,
+          });
+
+          let currentPath = opts.path ? normalizePath(opts.path) : null;
+
+          win.body.innerHTML = `
+          <div class="toolbar">
+            <button data-act="new">新建</button>
+            <button data-act="open">打开...</button>
+            <button data-act="save">保存</button>
+            <button data-act="saveas">另存为</button>
+            <span class="muted" data-el="info"></span>
+          </div>
+          <textarea class="text-editor" data-el="editor" spellcheck="false"></textarea>
+          <div class="statusbar" data-el="status"></div>
+        `;
+
+          const editor = win.body.querySelector('[data-el="editor"]');
+          const infoEl = win.body.querySelector('[data-el="info"]');
+          const statusEl = win.body.querySelector('[data-el="status"]');
+
+          function setTitle() {
+            win.setTitle(
+              currentPath
+                ? `记事本 - ${baseName(currentPath)}`
+                : "记事本 - 未命名",
+            );
+            infoEl.textContent = currentPath
+              ? shortPath(currentPath, 50)
+              : "未命名";
+            statusEl.textContent = `长度: ${editor.value.length}`;
+          }
+
+          async function load(path) {
+            const abs = normalizePath(path);
+            const node = getNode(abs);
+            if (!node || node.type !== "file") {
+              await showAlert("文件不存在", "记事本");
+              return;
+            }
+            editor.value = String(node.content || "");
+            currentPath = abs;
+            setTitle();
+          }
+
+          async function save() {
+            if (!currentPath) {
+              await saveAs();
+              return;
+            }
+            try {
+              writeFile(currentPath, editor.value, guessMime(currentPath));
+              setTitle();
+            } catch (err) {
+              await showAlert(err.message, "记事本");
+            }
+          }
+
+          async function saveAs() {
+            const target = await showPrompt(
+              "另存为路径：",
+              currentPath || "/Documents/未命名.txt",
+              "另存为",
+            );
+            if (!target) return;
+            try {
+              const abs = normalizePath(target);
+              writeFile(abs, editor.value, guessMime(abs));
+              currentPath = abs;
+              setTitle();
+            } catch (err) {
+              await showAlert(err.message, "记事本");
+            }
+          }
+
+          win.body
+            .querySelector('[data-act="new"]')
+            .addEventListener("click", () => {
+              currentPath = null;
+              editor.value = "";
+              setTitle();
+            });
+          win.body
+            .querySelector('[data-act="open"]')
+            .addEventListener("click", async () => {
+              const target = await showPrompt(
+                "打开文件路径：",
+                currentPath || "/Documents/welcome.txt",
+                "打开文件",
+              );
+              if (target) await load(target);
+            });
+          win.body
+            .querySelector('[data-act="save"]')
+            .addEventListener("click", () => void save());
+          win.body
+            .querySelector('[data-act="saveas"]')
+            .addEventListener("click", () => void saveAs());
+          editor.addEventListener("input", setTitle);
+
+          if (currentPath) {
+            void load(currentPath);
+          } else {
+            editor.value = "";
+            setTitle();
+          }
+        }
+
+        function openCodeEditor(opts = {}) {
+          const win = createWindow({
+            title: "代码编辑器",
+            width: 860,
+            height: 600,
+          });
+
+          let currentPath = opts.path ? normalizePath(opts.path) : null;
+
+          win.body.innerHTML = `
+          <div class="toolbar">
+            <button data-act="new">新建</button>
+            <button data-act="open">打开...</button>
+            <button data-act="save">保存</button>
+            <button data-act="saveas">另存为</button>
+            <button data-act="run">运行 Python</button>
+            <span class="muted" data-el="info"></span>
+          </div>
+          <div class="editor-shell">
+            <textarea class="text-editor" data-el="code" spellcheck="false"></textarea>
+            <pre class="editor-output" data-el="output"></pre>
+          </div>
+        `;
+
+          const codeEl = win.body.querySelector('[data-el="code"]');
+          const outputEl = win.body.querySelector('[data-el="output"]');
+          const infoEl = win.body.querySelector('[data-el="info"]');
+
+          function append(text, isErr = false) {
+            outputEl.textContent += (outputEl.textContent ? "\n" : "") + text;
+            if (isErr) outputEl.style.color = "#ffb4bf";
+            outputEl.scrollTop = outputEl.scrollHeight;
+          }
+
+          function resetOutput() {
+            outputEl.textContent = "";
+            outputEl.style.color = "#d9e2ff";
+          }
+
+          function setTitle() {
+            win.setTitle(
+              currentPath
+                ? `代码编辑器 - ${baseName(currentPath)}`
+                : "代码编辑器 - 未命名",
+            );
+            infoEl.textContent = currentPath
+              ? shortPath(currentPath, 58)
+              : "未命名 Python 缓冲区";
+          }
+
+          async function load(path) {
+            const abs = normalizePath(path);
+            const node = getNode(abs);
+            if (!node || node.type !== "file") {
+              await showAlert("文件不存在", "代码编辑器");
+              return;
+            }
+            codeEl.value = String(node.content || "");
+            currentPath = abs;
+            setTitle();
+          }
+
+          async function save() {
+            if (!currentPath) {
+              await saveAs();
+              return;
+            }
+            try {
+              writeFile(currentPath, codeEl.value, "text/x-python");
+              setTitle();
+            } catch (err) {
+              await showAlert(err.message, "代码编辑器");
+            }
+          }
+
+          async function saveAs() {
+            const target = await showPrompt(
+              "另存为路径：",
+              currentPath || "/Documents/新脚本.py",
+              "另存为",
+            );
+            if (!target) return;
+            try {
+              const abs = normalizePath(target);
+              writeFile(abs, codeEl.value, "text/x-python");
+              currentPath = abs;
+              setTitle();
+            } catch (err) {
+              await showAlert(err.message, "代码编辑器");
+            }
+          }
+
+          async function runCode() {
+            resetOutput();
+            append("正在加载 Python 运行时...");
+            await queuePython(codeEl.value, {
+              stdout: (line) => append(line),
+              stderr: (line) => append(line, true),
+            });
+          }
+
+          win.body
+            .querySelector('[data-act="new"]')
+            .addEventListener("click", () => {
+              currentPath = null;
+              codeEl.value = "print('hello from WebOS code editor')\n";
+              setTitle();
+            });
+          win.body
+            .querySelector('[data-act="open"]')
+            .addEventListener("click", async () => {
+              const target = await showPrompt(
+                "打开文件路径：",
+                currentPath || "/Documents/demo.py",
+                "打开文件",
+              );
+              if (target) await load(target);
+            });
+          win.body
+            .querySelector('[data-act="save"]')
+            .addEventListener("click", () => void save());
+          win.body
+            .querySelector('[data-act="saveas"]')
+            .addEventListener("click", () => void saveAs());
+          win.body
+            .querySelector('[data-act="run"]')
+            .addEventListener("click", runCode);
+
+          if (currentPath) void load(currentPath);
+          else {
+            codeEl.value = "for i in range(1, 6):\n    print('line', i)\n";
+            setTitle();
+          }
+        }
+
+        function openTerminal() {
+          const win = createWindow({
+            title: "终端",
+            width: 820,
+            height: 520,
+          });
+
+          let cwd = "/";
+          let history = [];
+          let historyIndex = 0;
+          let mode = "shell";
+
+          win.body.innerHTML = `
+          <div class="terminal-root">
+            <div class="terminal-output" data-el="out"></div>
+            <div class="terminal-input-row">
+              <span class="terminal-prompt" data-el="prompt"></span>
+              <input class="terminal-input" data-el="input" autocomplete="off" spellcheck="false"/>
+            </div>
+          </div>
+        `;
+
+          const outEl = win.body.querySelector('[data-el="out"]');
+          const promptEl = win.body.querySelector('[data-el="prompt"]');
+          const inputEl = win.body.querySelector('[data-el="input"]');
+
+          function refreshPrompt() {
+            promptEl.textContent = mode === "shell" ? `${cwd} $` : ">>> ";
+          }
+
+          function print(text, className = "") {
+            const line = document.createElement("div");
+            line.className = `terminal-line ${className}`.trim();
+            line.textContent = text;
+            outEl.appendChild(line);
+            outEl.scrollTop = outEl.scrollHeight;
+          }
+
+          async function runPythonCode(code) {
+            await queuePython(code, {
+              stdout: (line) => print(line),
+              stderr: (line) => print(line, "error"),
+            });
+          }
+
+          async function handleShell(line) {
+            const args = parseArgs(line);
+            if (!args.length) return;
+            const cmd = args[0];
+            if (cmd === "help") {
+              print("命令: ls, cd, pwd, cat, clear, python, help");
+              print("python              -> 进入交互模式");
+              print("python script.py    -> 运行虚拟文件系统中的 python 文件");
+              return;
+            }
+            if (cmd === "clear") {
+              outEl.innerHTML = "";
+              return;
+            }
+            if (cmd === "pwd") {
+              print(cwd);
+              return;
+            }
+            if (cmd === "ls") {
+              const target = normalizePath(args[1] || ".", cwd);
+              const node = getNode(target);
+              if (!node || node.type !== "folder") {
+                print(`ls: folder not found: ${target}`, "error");
+                return;
+              }
+              const rows = listDir(target);
+              print(
+                rows
+                  .map((r) => (r.type === "folder" ? `${r.name}/` : r.name))
+                  .join("    ") || "(empty)",
+              );
+              return;
+            }
+            if (cmd === "cd") {
+              const target = normalizePath(args[1] || "/", cwd);
+              const node = getNode(target);
+              if (!node || node.type !== "folder") {
+                print(`cd: folder not found: ${target}`, "error");
+                return;
+              }
+              cwd = target;
+              refreshPrompt();
+              return;
+            }
+            if (cmd === "cat") {
+              if (!args[1]) {
+                print("cat: missing file path", "error");
+                return;
+              }
+              const target = normalizePath(args[1], cwd);
+              const node = getNode(target);
+              if (!node || node.type !== "file") {
+                print(`cat: file not found: ${target}`, "error");
+                return;
+              }
+              if (!isTextLike(target, node) && !target.endsWith(".url")) {
+                print("cat: binary or non-text file", "error");
+                return;
+              }
+              print(String(node.content || ""));
+              return;
+            }
+            if (cmd === "python") {
+              if (!args[1]) {
+                mode = "python";
+                refreshPrompt();
+                print("进入 Python REPL。使用 exit() 或 quit() 返回。", "ok");
+                return;
+              }
+              const target = normalizePath(args[1], cwd);
+              const node = getNode(target);
+              if (!node || node.type !== "file") {
+                print(`python: file not found: ${target}`, "error");
+                return;
+              }
+              print(`正在运行 ${target} ...`, "ok");
+              await runPythonCode(String(node.content || ""));
+              return;
+            }
+            print(`Unknown command: ${cmd}`, "error");
+          }
+
+          async function handlePython(line) {
+            if (line.trim() === "exit()" || line.trim() === "quit()") {
+              mode = "shell";
+              refreshPrompt();
+              print("已退出 Python REPL。", "ok");
+              return;
+            }
+            await runPythonCode(line);
+          }
+
+          async function handleEnter() {
+            const raw = inputEl.value;
+            const line = raw.trimEnd();
+            print(`${promptEl.textContent} ${line}`);
+            if (line) {
+              history.push(line);
+              historyIndex = history.length;
+            }
+            inputEl.value = "";
+            if (!line) return;
+            if (mode === "shell") await handleShell(line);
+            else await handlePython(line);
+          }
+
+          inputEl.addEventListener("keydown", async (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              await handleEnter();
+            } else if (e.key === "ArrowUp") {
+              if (!history.length) return;
+              e.preventDefault();
+              historyIndex = Math.max(0, historyIndex - 1);
+              inputEl.value = history[historyIndex] || "";
+            } else if (e.key === "ArrowDown") {
+              if (!history.length) return;
+              e.preventDefault();
+              historyIndex = Math.min(history.length, historyIndex + 1);
+              inputEl.value = history[historyIndex] || "";
+            }
+          });
+
+          win.body.addEventListener("mousedown", () => {
+            setTimeout(() => inputEl.focus(), 0);
+          });
+
+          print("WebOS 终端");
+          print("输入 'help' 查看命令。");
+          refreshPrompt();
+          inputEl.focus();
+        }
+
+        function normalizeUrl(value) {
+          const raw = (value || "").trim();
+          if (!raw) return "";
+          if (/^[a-zA-Z]+:\/\//.test(raw)) return raw;
+          return `https://${raw}`;
+        }
+
+        function toMirrorUrl(url) {
+          const stripped = url.replace(/^https?:\/\//, "");
+          return `https://r.jina.ai/http://${stripped}`;
+        }
+
+        function openBrowser(opts = {}) {
+          const win = createWindow({
+            title: "浏览器",
+            width: 920,
+            height: 620,
+          });
+
+          const initial = normalizeUrl(
+            opts.url || "https://www.wikipedia.org/",
+          );
+          win.body.innerHTML = `
+          <div class="browser-root">
+            <div class="toolbar">
+              <input data-el="url" value="${escapeHtml(initial)}" />
+              <button data-act="go">访问</button>
+              <button data-act="mirror">镜像</button>
+              <button data-act="open">新标签打开</button>
+            </div>
+            <iframe class="browser-frame" data-el="frame" referrerpolicy="no-referrer"></iframe>
+            <div class="helper-note">
+              部分站点会阻止 iframe 直接嵌入，无法直连时请使用镜像模式。
+            </div>
+          </div>
+        `;
+
+          const input = win.body.querySelector('[data-el="url"]');
+          const frame = win.body.querySelector('[data-el="frame"]');
+
+          function go(useMirror = false) {
+            const url = normalizeUrl(input.value);
+            if (!url) return;
+            frame.src = useMirror ? toMirrorUrl(url) : url;
+          }
+
+          win.body
+            .querySelector('[data-act="go"]')
+            .addEventListener("click", () => go(false));
+          win.body
+            .querySelector('[data-act="mirror"]')
+            .addEventListener("click", () => go(true));
+          win.body
+            .querySelector('[data-act="open"]')
+            .addEventListener("click", () => {
+              const url = normalizeUrl(input.value);
+              if (url) window.open(url, "_blank", "noopener");
+            });
+          input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") go(false);
+          });
+
+          go(false);
+        }
+
+        function openGame2048() {
+          const win = createWindow({
+            title: "2048",
+            width: 500,
+            height: 620,
+          });
+
+          win.body.innerHTML = `
+          <div class="game-root">
+            <div class="toolbar" style="border: none; padding: 0; background: transparent;">
+              <button data-act="restart">Restart</button>
+              <span data-el="score" style="font-weight:700;">Score: 0</span>
+              <span data-el="msg" class="muted"></span>
+            </div>
+            <div class="game-board" data-el="board"></div>
+            <div class="game-controls">
+              <button data-move="up">Up</button>
+              <button data-move="left">Left</button>
+              <button data-move="down">Down</button>
+              <button data-move="right">Right</button>
+            </div>
+          </div>
+        `;
+
+          const boardEl = win.body.querySelector('[data-el="board"]');
+          const scoreEl = win.body.querySelector('[data-el="score"]');
+          const msgEl = win.body.querySelector('[data-el="msg"]');
+          let board = Array.from({ length: 4 }, () => Array(4).fill(0));
+          let score = 0;
+
+          function spawn() {
+            const empty = [];
+            for (let r = 0; r < 4; r += 1) {
+              for (let c = 0; c < 4; c += 1) {
+                if (!board[r][c]) empty.push([r, c]);
+              }
+            }
+            if (!empty.length) return;
+            const [r, c] = empty[Math.floor(Math.random() * empty.length)];
+            board[r][c] = Math.random() < 0.9 ? 2 : 4;
+          }
+
+          function lineMove(values) {
+            const clean = values.filter(Boolean);
+            let gain = 0;
+            for (let i = 0; i < clean.length - 1; i += 1) {
+              if (clean[i] && clean[i] === clean[i + 1]) {
+                clean[i] *= 2;
+                gain += clean[i];
+                clean.splice(i + 1, 1);
+              }
+            }
+            while (clean.length < 4) clean.push(0);
+            return { line: clean, gain };
+          }
+
+          function cloneBoard(src) {
+            return src.map((row) => row.slice());
+          }
+
+          function boardsEqual(a, b) {
+            for (let r = 0; r < 4; r += 1) {
+              for (let c = 0; c < 4; c += 1) {
+                if (a[r][c] !== b[r][c]) return false;
+              }
+            }
+            return true;
+          }
+
+          function canMoveAny() {
+            for (let r = 0; r < 4; r += 1) {
+              for (let c = 0; c < 4; c += 1) {
+                if (board[r][c] === 0) return true;
+                if (r < 3 && board[r][c] === board[r + 1][c]) return true;
+                if (c < 3 && board[r][c] === board[r][c + 1]) return true;
+              }
+            }
+            return false;
+          }
+
+          function move(dir) {
+            const prev = cloneBoard(board);
+            let gainSum = 0;
+
+            if (dir === "left" || dir === "right") {
+              for (let r = 0; r < 4; r += 1) {
+                const raw = board[r].slice();
+                const line = dir === "left" ? raw : raw.reverse();
+                const moved = lineMove(line);
+                gainSum += moved.gain;
+                board[r] = dir === "left" ? moved.line : moved.line.reverse();
+              }
+            } else {
+              for (let c = 0; c < 4; c += 1) {
+                const raw = [
+                  board[0][c],
+                  board[1][c],
+                  board[2][c],
+                  board[3][c],
+                ];
+                const line = dir === "up" ? raw : raw.reverse();
+                const moved = lineMove(line);
+                gainSum += moved.gain;
+                const put = dir === "up" ? moved.line : moved.line.reverse();
+                for (let r = 0; r < 4; r += 1) board[r][c] = put[r];
+              }
+            }
+
+            if (!boardsEqual(prev, board)) {
+              score += gainSum;
+              spawn();
+              render();
+              if (!canMoveAny()) {
+                msgEl.textContent = "Game Over";
+              }
+            }
+          }
+
+          function tileClass(value) {
+            return `tile v${value}`;
+          }
+
+          function render() {
+            scoreEl.textContent = `Score: ${score}`;
+            boardEl.innerHTML = "";
+            for (let r = 0; r < 4; r += 1) {
+              for (let c = 0; c < 4; c += 1) {
+                const tile = document.createElement("div");
+                const v = board[r][c];
+                tile.className = tileClass(v);
+                tile.textContent = v ? String(v) : "0";
+                boardEl.appendChild(tile);
+              }
+            }
+            if (board.some((row) => row.some((v) => v >= 2048))) {
+              msgEl.textContent = "你达到 2048 了！";
+            }
+          }
+
+          function restart() {
+            board = Array.from({ length: 4 }, () => Array(4).fill(0));
+            score = 0;
+            msgEl.textContent = "";
+            spawn();
+            spawn();
+            render();
+          }
+
+          win.body
+            .querySelector('[data-act="restart"]')
+            .addEventListener("click", restart);
+          win.body.querySelectorAll("[data-move]").forEach((btn) => {
+            btn.addEventListener("click", () =>
+              move(btn.getAttribute("data-move")),
+            );
+          });
+
+          win.body.addEventListener("keydown", (e) => {
+            const map = {
+              ArrowUp: "up",
+              ArrowDown: "down",
+              ArrowLeft: "left",
+              ArrowRight: "right",
+            };
+            const dir = map[e.key];
+            if (!dir) return;
+            e.preventDefault();
+            move(dir);
+          });
+          win.body.tabIndex = 0;
+          win.body.addEventListener("mousedown", () =>
+            setTimeout(() => win.body.focus(), 0),
+          );
+
+          restart();
+        }
+
+        function openPaint() {
+          const win = createWindow({
+            title: "画板",
+            width: 860,
+            height: 620,
+          });
+
+          win.body.innerHTML = `
+          <div class="paint-root">
+            <div class="toolbar">
+              <label>颜色 <input data-el="color" type="color" value="#1f5eff" /></label>
+              <label>粗细 <input data-el="size" type="range" min="1" max="40" value="4" /></label>
+              <button data-act="clear">清空</button>
+              <button data-act="save">保存到 /Pictures</button>
+            </div>
+            <div class="paint-canvas-wrap">
+              <canvas class="paint-canvas" data-el="canvas"></canvas>
+            </div>
+          </div>
+        `;
+
+          const colorEl = win.body.querySelector('[data-el="color"]');
+          const sizeEl = win.body.querySelector('[data-el="size"]');
+          const canvas = win.body.querySelector('[data-el="canvas"]');
+          const ctx = canvas.getContext("2d");
+          let drawing = false;
+
+          function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+            canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(dpr, dpr);
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, rect.width, rect.height);
+          }
+
+          function getPos(event) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+              x: event.clientX - rect.left,
+              y: event.clientY - rect.top,
+            };
+          }
+
+          canvas.addEventListener("mousedown", (e) => {
+            drawing = true;
+            const p = getPos(e);
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+          });
+          canvas.addEventListener("mousemove", (e) => {
+            if (!drawing) return;
+            const p = getPos(e);
+            ctx.strokeStyle = colorEl.value;
+            ctx.lineWidth = Number(sizeEl.value);
+            ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+          });
+          window.addEventListener("mouseup", () => {
+            drawing = false;
+          });
+
+          win.body
+            .querySelector('[data-act="clear"]')
+            .addEventListener("click", () => {
+              const rect = canvas.getBoundingClientRect();
+              ctx.fillStyle = "#ffffff";
+              ctx.fillRect(0, 0, rect.width, rect.height);
+            });
+
+          win.body
+            .querySelector('[data-act="save"]')
+            .addEventListener("click", async () => {
+              const name = `paint-${Date.now()}.png`;
+              const target = `/Pictures/${name}`;
+              const dataUrl = canvas.toDataURL("image/png");
+              try {
+                writeFile(target, dataUrl, "image/png");
+                await showAlert(`已保存：${target}`, "画板");
+              } catch (err) {
+                await showAlert(err.message, "画板");
+              }
+            });
+
+          const observer = new ResizeObserver(() => {
+            resizeCanvas();
+          });
+          observer.observe(canvas);
+          win.onClose(() => observer.disconnect());
+          resizeCanvas();
+        }
+
+        function openVideoPlayer(opts = {}) {
+          const win = createWindow({
+            title: "视频播放器",
+            width: 860,
+            height: 580,
+          });
+
+          const samples = [
+            {
+              name: "花朵",
+              url: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+            },
+            {
+              name: "大雄兔片段",
+              url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            },
+          ];
+
+          win.body.innerHTML = `
+          <div class="video-root">
+            <div class="toolbar">
+              <select data-el="sample"></select>
+              <button data-act="sample">加载示例</button>
+              <input data-el="path" placeholder="/Videos/flower.mp4 or https://..." />
+              <button data-act="path">加载路径/URL</button>
+            </div>
+            <div class="video-wrap">
+              <video controls data-el="video"></video>
+            </div>
+          </div>
+        `;
+
+          const sampleEl = win.body.querySelector('[data-el="sample"]');
+          const pathEl = win.body.querySelector('[data-el="path"]');
+          const videoEl = win.body.querySelector('[data-el="video"]');
+          samples.forEach((s, idx) => {
+            const option = document.createElement("option");
+            option.value = String(idx);
+            option.textContent = s.name;
+            sampleEl.appendChild(option);
+          });
+
+          function setSource(url) {
+            if (!url) return;
+            videoEl.src = url;
+            videoEl.load();
+          }
+
+          async function openPathOrUrl(raw) {
+            const v = (raw || "").trim();
+            if (!v) return;
+            if (/^https?:\/\//i.test(v) || /^data:/i.test(v)) {
+              setSource(v);
+              return;
+            }
+            const abs = normalizePath(v);
+            const node = getNode(abs);
+            if (!node || node.type !== "file") {
+              await showAlert("视频文件不存在", "视频播放器");
+              return;
+            }
+            setSource(String(node.content || ""));
+          }
+
+          win.body
+            .querySelector('[data-act="sample"]')
+            .addEventListener("click", () => {
+              const i = Number(sampleEl.value || 0);
+              setSource(samples[i].url);
+            });
+          win.body
+            .querySelector('[data-act="path"]')
+            .addEventListener("click", () => {
+              void openPathOrUrl(pathEl.value);
+            });
+          pathEl.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") void openPathOrUrl(pathEl.value);
+          });
+
+          if (opts.path) {
+            pathEl.value = opts.path;
+            void openPathOrUrl(opts.path);
+          } else {
+            setSource(samples[0].url);
+          }
+        }
+
+        function openCalculator() {
+          const win = createWindow({
+            title: "计算器",
+            width: 360,
+            height: 520,
+          });
+
+          const keys = [
+            "7",
+            "8",
+            "9",
+            "/",
+            "4",
+            "5",
+            "6",
+            "*",
+            "1",
+            "2",
+            "3",
+            "-",
+            "0",
+            ".",
+            "=",
+            "+",
+            "C",
+            "(",
+            ")",
+            "<-",
+          ];
+
+          win.body.innerHTML = `
+          <div class="calc-root">
+            <div class="calc-display" data-el="display">0</div>
+            <div class="calc-grid" data-el="keys"></div>
+          </div>
+        `;
+
+          const display = win.body.querySelector('[data-el="display"]');
+          const keysEl = win.body.querySelector('[data-el="keys"]');
+          let expr = "";
+
+          function safeEval(text) {
+            if (!/^[0-9+\-*/().\s]+$/.test(text)) {
+              throw new Error("无效输入");
+            }
+            return Function(`"use strict"; return (${text})`)();
+          }
+
+          function render() {
+            display.textContent = expr || "0";
+          }
+
+          function press(k) {
+            if (k === "C") {
+              expr = "";
+              render();
+              return;
+            }
+            if (k === "<-") {
+              expr = expr.slice(0, -1);
+              render();
+              return;
+            }
+            if (k === "=") {
+              if (!expr.trim()) return;
+              try {
+                expr = String(safeEval(expr));
+              } catch {
+                expr = "Error";
+              }
+              render();
+              return;
+            }
+            if (expr === "Error") expr = "";
+            expr += k;
+            render();
+          }
+
+          keys.forEach((key) => {
+            const btn = document.createElement("button");
+            btn.textContent = key;
+            if (["/", "*", "-", "+", "C", "<-"].includes(key))
+              btn.classList.add("op");
+            if (key === "=") btn.classList.add("eq");
+            btn.addEventListener("click", () => press(key));
+            keysEl.appendChild(btn);
+          });
+        }
+
+        function openClock() {
+          const win = createWindow({
+            title: "时钟与日历",
+            width: 420,
+            height: 540,
+          });
+
+          win.body.innerHTML = `
+          <div class="clock-root">
+            <div class="calendar-controls">
+              <label>年
+                <select data-el="year"></select>
+              </label>
+              <label>月
+                <select data-el="month"></select>
+              </label>
+              <label>日
+                <select data-el="day"></select>
+              </label>
+              <button data-act="today">今天</button>
+            </div>
+            <div class="big-time" data-el="time"></div>
+            <div class="big-date" data-el="date"></div>
+            <div class="calendar-grid" data-el="cal"></div>
+          </div>
+        `;
+
+          const yearEl = win.body.querySelector('[data-el="year"]');
+          const monthEl = win.body.querySelector('[data-el="month"]');
+          const dayEl = win.body.querySelector('[data-el="day"]');
+          const timeEl = win.body.querySelector('[data-el="time"]');
+          const dateEl = win.body.querySelector('[data-el="date"]');
+          const calEl = win.body.querySelector('[data-el="cal"]');
+          const weekdayHeader = ["日", "一", "二", "三", "四", "五", "六"];
+          let selectedDate = new Date();
+          let todayKey = new Date().toDateString();
+
+          function daysInMonth(year, monthIndex) {
+            return new Date(year, monthIndex + 1, 0).getDate();
+          }
+
+          function fillYearOptions() {
+            yearEl.innerHTML = "";
+            for (let y = 1900; y <= 2099; y += 1) {
+              const option = document.createElement("option");
+              option.value = String(y);
+              option.textContent = String(y);
+              yearEl.appendChild(option);
+            }
+          }
+
+          function fillMonthOptions() {
+            monthEl.innerHTML = "";
+            for (let m = 1; m <= 12; m += 1) {
+              const option = document.createElement("option");
+              option.value = String(m);
+              option.textContent = String(m);
+              monthEl.appendChild(option);
+            }
+          }
+
+          function fillDayOptions(preferredDay) {
+            const year = Number(yearEl.value);
+            const monthIndex = Number(monthEl.value) - 1;
+            const total = daysInMonth(year, monthIndex);
+            const keep = Math.min(Math.max(1, Number(preferredDay) || 1), total);
+            dayEl.innerHTML = "";
+            for (let d = 1; d <= total; d += 1) {
+              const option = document.createElement("option");
+              option.value = String(d);
+              option.textContent = String(d);
+              dayEl.appendChild(option);
+            }
+            dayEl.value = String(keep);
+          }
+
+          function syncSelectors(date) {
+            yearEl.value = String(date.getFullYear());
+            monthEl.value = String(date.getMonth() + 1);
+            fillDayOptions(date.getDate());
+            dayEl.value = String(date.getDate());
+          }
+
+          function renderCalendar() {
+            const y = selectedDate.getFullYear();
+            const m = selectedDate.getMonth();
+            const first = new Date(y, m, 1);
+            const firstDay = first.getDay();
+            const days = new Date(y, m + 1, 0).getDate();
+            const today = new Date();
+            calEl.innerHTML = "";
+            weekdayHeader.forEach((h) => {
+              const cell = document.createElement("div");
+              cell.className = "calendar-cell head";
+              cell.textContent = h;
+              calEl.appendChild(cell);
+            });
+            for (let i = 0; i < firstDay; i += 1) {
+              const blank = document.createElement("div");
+              blank.className = "calendar-cell";
+              blank.textContent = "";
+              calEl.appendChild(blank);
+            }
+            for (let d = 1; d <= days; d += 1) {
+              const cell = document.createElement("div");
+              cell.className = "calendar-cell";
+              cell.textContent = String(d);
+              if (
+                d === today.getDate() &&
+                m === today.getMonth() &&
+                y === today.getFullYear()
+              ) {
+                cell.classList.add("today");
+              }
+              if (d === selectedDate.getDate()) {
+                cell.classList.add("selected");
+              }
+              cell.addEventListener("click", () => {
+                selectedDate = new Date(y, m, d);
+                syncSelectors(selectedDate);
+                renderDate();
+                renderCalendar();
+              });
+              calEl.appendChild(cell);
+            }
+          }
+
+          function renderDate() {
+            dateEl.textContent = selectedDate.toLocaleDateString(undefined, {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            });
+          }
+
+          function updateFromSelectors() {
+            const year = Number(yearEl.value);
+            const month = Number(monthEl.value) - 1;
+            const day = Number(dayEl.value);
+            selectedDate = new Date(year, month, day);
+            renderDate();
+            renderCalendar();
+          }
+
+          function tick() {
+            const now = new Date();
+            timeEl.textContent = now.toLocaleTimeString(undefined, {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            });
+            const key = now.toDateString();
+            if (key !== todayKey) {
+              todayKey = key;
+              renderCalendar();
+            }
+          }
+
+          fillYearOptions();
+          fillMonthOptions();
+          syncSelectors(selectedDate);
+          renderDate();
+          renderCalendar();
+
+          yearEl.addEventListener("change", () => {
+            fillDayOptions(dayEl.value);
+            updateFromSelectors();
+          });
+          monthEl.addEventListener("change", () => {
+            fillDayOptions(dayEl.value);
+            updateFromSelectors();
+          });
+          dayEl.addEventListener("change", updateFromSelectors);
+          win.body
+            .querySelector('[data-act="today"]')
+            .addEventListener("click", () => {
+              selectedDate = new Date();
+              syncSelectors(selectedDate);
+              renderDate();
+              renderCalendar();
+            });
+
+          tick();
+          const timer = setInterval(tick, 1000);
+          win.onClose(() => clearInterval(timer));
+        }
+
+        function applyTheme(themeKey) {
+          document.body.classList.remove(
+            "theme-aurora",
+            "theme-sunset",
+            "theme-graphite",
+          );
+          document.body.classList.add(`theme-${themeKey}`);
+          localStorage.setItem(STORAGE_KEYS.theme, themeKey);
+        }
+
+        function openSettings() {
+          const win = createWindow({
+            title: "设置",
+            width: 560,
+            height: 460,
+          });
+
+          const current = localStorage.getItem(STORAGE_KEYS.theme) || "aurora";
+          win.body.innerHTML = `
+          <div class="settings-root">
+            <div style="font-weight:700;font-size:18px;">桌面个性化</div>
+            <div class="muted">选择桌面主题，设置会保存在 localStorage 中。</div>
+            <div class="theme-list" data-el="themes"></div>
+          </div>
+        `;
+
+          const themesEl = win.body.querySelector('[data-el="themes"]');
+          themeOptions.forEach((t) => {
+            const card = document.createElement("button");
+            card.className =
+              "theme-card" + (t.key === current ? " active" : "");
+            card.innerHTML = `
+            <div class="swatch" style="background:${t.gradient};"></div>
+            <div style="font-weight:600;">${escapeHtml(t.title)}</div>
+          `;
+            card.addEventListener("click", () => {
+              applyTheme(t.key);
+              [...themesEl.querySelectorAll(".theme-card")].forEach((c) =>
+                c.classList.remove("active"),
+              );
+              card.classList.add("active");
+            });
+            themesEl.appendChild(card);
+          });
+        }
+
+        function openImageViewer(opts = {}) {
+          const win = createWindow({
+            title: "图片查看器",
+            width: 760,
+            height: 560,
+          });
+
+          const initialPath = opts.path
+            ? normalizePath(opts.path)
+            : "/Pictures/mountain.jpg";
+          win.body.innerHTML = `
+          <div class="image-root">
+            <div class="toolbar">
+              <input data-el="path" value="${escapeHtml(initialPath)}" />
+              <button data-act="open">打开</button>
+              <button data-act="close-image">关闭图片</button>
+            </div>
+            <div class="image-stage">
+              <img data-el="img" class="hidden" alt="Image preview"/>
+              <div class="image-empty" data-el="empty">暂无图片预览，打开图片后可查看。</div>
+            </div>
+            <div class="statusbar" data-el="status">就绪</div>
+          </div>
+        `;
+
+          const pathInput = win.body.querySelector('[data-el="path"]');
+          const img = win.body.querySelector('[data-el="img"]');
+          const emptyEl = win.body.querySelector('[data-el="empty"]');
+          const statusEl = win.body.querySelector('[data-el="status"]');
+
+          function closeImage() {
+            img.removeAttribute("src");
+            img.classList.add("hidden");
+            emptyEl.classList.remove("hidden");
+            statusEl.textContent = "未打开图片";
+            win.setTitle("图片查看器");
+          }
+
+          async function load(rawPath) {
+            const abs = normalizePath(rawPath);
+            const node = getNode(abs);
+            if (!node || node.type !== "file") {
+              await showAlert("图片文件不存在", "图片查看器");
+              return;
+            }
+            if (!isImage(abs)) {
+              await showAlert("所选文件不是图片。", "图片查看器");
+              return;
+            }
+            const source = String(node.content || "").trim();
+            if (!source) {
+              await showAlert("图片文件内容为空。", "图片查看器");
+              return;
+            }
+
+            statusEl.textContent = "正在加载图片...";
+            img.onload = () => {
+              img.classList.remove("hidden");
+              emptyEl.classList.add("hidden");
+              statusEl.textContent = `预览中: ${abs}`;
+              win.setTitle(`图片查看器 - ${baseName(abs)}`);
+            };
+            img.onerror = async () => {
+              closeImage();
+              await showAlert("图片预览加载失败。", "图片查看器");
+            };
+            img.src = source;
+          }
+
+          win.body
+            .querySelector('[data-act="open"]')
+            .addEventListener("click", () => void load(pathInput.value));
+          win.body
+            .querySelector('[data-act="close-image"]')
+            .addEventListener("click", closeImage);
+          pathInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") void load(pathInput.value);
+          });
+
+          void load(initialPath);
+        }
+
+        const appLaunchers = {
+          explorer: openExplorer,
+          notepad: openNotepad,
+          code: openCodeEditor,
+          terminal: openTerminal,
+          browser: openBrowser,
+          game2048: openGame2048,
+          paint: openPaint,
+          video: openVideoPlayer,
+          calculator: openCalculator,
+          clock: openClock,
+          settings: openSettings,
+          image: openImageViewer,
+        };
+
+        function openApp(key, opts = {}) {
+          const open = appLaunchers[key];
+          if (!open) return;
+          open(opts);
+        }
+
+        function buildDesktop() {
+          desktopEl.innerHTML = "";
+          desktopApps.forEach((key) => {
+            const info = APP_INFO[key];
+            const icon = document.createElement("button");
+            icon.className = "desktop-icon";
+            icon.innerHTML = `
+            <div class="icon-glyph">${getAppIconSvg(key)}</div>
+            <div class="icon-title">${escapeHtml(info.name)}</div>
+          `;
+            icon.addEventListener("dblclick", () => openApp(key));
+            desktopEl.appendChild(icon);
+          });
+        }
+
+        function buildStartMenu() {
+          startListEl.innerHTML = "";
+          Object.keys(APP_INFO).forEach((key) => {
+            if (key === "image") return;
+            const info = APP_INFO[key];
+            const row = document.createElement("button");
+            row.className = "start-item";
+            row.innerHTML = `
+            <div class="badge">${getAppIconSvg(key)}</div>
+            <div>${escapeHtml(info.name)}</div>
+          `;
+            row.addEventListener("click", () => {
+              startMenuEl.classList.add("hidden");
+              openApp(key);
+            });
+            startListEl.appendChild(row);
+          });
+        }
+
+        function buildPinned() {
+          pinnedEl.innerHTML = "";
+          pinnedApps.forEach((key) => {
+            const info = APP_INFO[key];
+            const btn = document.createElement("button");
+            btn.className = "task-icon";
+            btn.title = info.name;
+            btn.innerHTML = getAppIconSvg(key);
+            btn.addEventListener("click", () => openApp(key));
+            pinnedEl.appendChild(btn);
+          });
+        }
+
+        function updateClockChip() {
+          const now = new Date();
+          const time = now.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          const date = now.toLocaleDateString();
+          clockChipEl.innerHTML = `${time}<br>${date}`;
+        }
+
+        function initEvents() {
+          startBtnEl.addEventListener("click", (e) => {
+            e.stopPropagation();
+            startMenuEl.classList.toggle("hidden");
+          });
+
+          document.addEventListener("mousedown", (e) => {
+            if (!startMenuEl.classList.contains("hidden")) {
+              if (
+                !startMenuEl.contains(e.target) &&
+                !startBtnEl.contains(e.target)
+              ) {
+                startMenuEl.classList.add("hidden");
+              }
+            }
+          });
+
+          clockChipEl.addEventListener("click", () => openClock());
+          window.addEventListener("resize", () => {
+            for (const entry of state.windows.values()) {
+              if (!entry.maximized) continue;
+              entry.el.style.left = "6px";
+              entry.el.style.top = "6px";
+              entry.el.style.width = "calc(100vw - 12px)";
+              entry.el.style.height = `calc(100vh - var(--taskbar-height) - 12px)`;
+            }
+          });
+        }
+
+        function init() {
+          state.fs = loadFS();
+          const initialTheme =
+            localStorage.getItem(STORAGE_KEYS.theme) || "aurora";
+          applyTheme(initialTheme);
+          buildDesktop();
+          buildStartMenu();
+          buildPinned();
+          renderLucideIcons();
+          updateClockChip();
+          setInterval(updateClockChip, 1000);
+          initEvents();
+        }
+
+        init();
+      })();
+    </script>
+  </body>
+</html>

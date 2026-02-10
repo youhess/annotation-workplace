@@ -1,0 +1,3837 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HarmonyOS WebOS Simulator</title>
+    <style>
+      :root {
+        --blue-0: #eaf5ff;
+        --blue-1: #d5ecff;
+        --blue-2: #b6defe;
+        --blue-3: #83c2f9;
+        --blue-4: #3b95ed;
+        --blue-5: #0c6fe4;
+        --text-1: #0f2034;
+        --text-2: #4b6683;
+        --card: rgba(255, 255, 255, 0.72);
+        --glass: rgba(255, 255, 255, 0.44);
+        --line: rgba(9, 53, 94, 0.12);
+        --radius-l: 24px;
+        --radius-m: 16px;
+        --shadow: 0 12px 28px rgba(8, 36, 79, 0.23);
+        --z-wallpaper: 1;
+        --z-home: 10;
+        --z-app: 20;
+        --z-sheet: 50;
+        --z-overlays: 60;
+        --z-keyboard: 51;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+      }
+
+      i[data-lucide] {
+        font-style: normal;
+        display: inline-grid;
+        place-items: center;
+        line-height: 0;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+        font-family:
+          "HarmonyOS Sans", "Segoe UI", "PingFang SC", "Microsoft YaHei",
+          sans-serif;
+        background:
+          radial-gradient(1200px 600px at 16% 12%, #65bbff 0%, transparent 52%),
+          radial-gradient(900px 520px at 84% 84%, #7acbff 0%, transparent 58%),
+          linear-gradient(140deg, #0f5fd2 0%, #1f8ff7 36%, #78ccff 100%);
+        color: var(--text-1);
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+      }
+
+      .device-shell {
+        width: 390px;
+        height: 844px;
+        border-radius: 48px;
+        background: #0d0d11;
+        padding: 10px;
+        box-shadow: 0 26px 70px rgba(0, 0, 0, 0.42);
+        position: relative;
+      }
+
+      .phone {
+        width: 100%;
+        height: 100%;
+        border-radius: 40px;
+        overflow: hidden;
+        position: relative;
+        background: #b9deff;
+        touch-action: none;
+      }
+
+      .camera-hole {
+        position: absolute;
+        top: 9px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 112px;
+        height: 32px;
+        border-radius: 18px;
+        background: #090b10;
+        z-index: 100;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+        pointer-events: none;
+      }
+
+      #Wallpaper {
+        position: absolute;
+        inset: 0;
+        z-index: var(--z-wallpaper);
+        background:
+          radial-gradient(
+            240px 240px at 16% 14%,
+            rgba(255, 255, 255, 0.35),
+            transparent 56%
+          ),
+          radial-gradient(
+            310px 310px at 82% 18%,
+            rgba(12, 111, 228, 0.5),
+            transparent 56%
+          ),
+          radial-gradient(
+            360px 420px at 52% 68%,
+            rgba(180, 232, 255, 0.57),
+            transparent 58%
+          ),
+          linear-gradient(180deg, #1e95f6 0%, #8ad4ff 60%, #a2ddff 100%);
+      }
+
+      #Wallpaper::before,
+      #Wallpaper::after {
+        content: "";
+        position: absolute;
+        border-radius: 48% 52% 56% 44% / 48% 40% 60% 52%;
+        background: linear-gradient(
+          165deg,
+          rgba(255, 255, 255, 0.28),
+          rgba(17, 113, 232, 0.16)
+        );
+        filter: blur(0.2px);
+      }
+
+      #Wallpaper::before {
+        width: 320px;
+        height: 460px;
+        left: -130px;
+        top: 190px;
+        transform: rotate(22deg);
+      }
+
+      #Wallpaper::after {
+        width: 280px;
+        height: 420px;
+        right: -110px;
+        top: 120px;
+        transform: rotate(-18deg);
+      }
+
+      .layer {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(10px) scale(0.995);
+        transition:
+          opacity 260ms ease,
+          transform 280ms cubic-bezier(0.2, 0.82, 0.2, 1),
+          visibility 0ms linear 300ms;
+        pointer-events: none;
+      }
+
+      .layer.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0) scale(1);
+        transition-delay: 0ms;
+        pointer-events: auto;
+      }
+
+      .status-bar {
+        height: 42px;
+        padding: 12px 20px 0;
+        color: #f7fbff;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 14px;
+        letter-spacing: 0.2px;
+        text-shadow: 0 1px 4px rgba(0, 40, 91, 0.32);
+      }
+
+      .status-right {
+        display: flex;
+        gap: 7px;
+        align-items: center;
+        color: #eaf6ff;
+      }
+
+      .signal,
+      .wifi,
+      .battery {
+        display: inline-block;
+        height: 10px;
+        border-radius: 2px;
+        border: 1px solid rgba(238, 248, 255, 0.84);
+        position: relative;
+      }
+
+      .signal {
+        width: 15px;
+        border: none;
+        background: linear-gradient(to right, #eaf7ff 2px, transparent 2px) left
+          0 top 6px / 3px 4px repeat-x;
+      }
+
+      .wifi {
+        width: 12px;
+        border: none;
+        border-top: 2px solid #eaf7ff;
+        border-radius: 50% 50% 0 0;
+        height: 8px;
+        transform: translateY(2px);
+      }
+
+      .battery {
+        width: 20px;
+        border-radius: 3px;
+      }
+
+      .battery::before {
+        content: "";
+        position: absolute;
+        right: -3px;
+        top: 2px;
+        width: 2px;
+        height: 4px;
+        background: rgba(238, 248, 255, 0.9);
+        border-radius: 1px;
+      }
+
+      .battery::after {
+        content: "";
+        position: absolute;
+        left: 1px;
+        top: 1px;
+        right: 5px;
+        bottom: 1px;
+        border-radius: 2px;
+        background: #e8f6ff;
+      }
+
+      #LockScreen {
+        z-index: var(--z-home);
+        display: flex;
+        flex-direction: column;
+        color: #f8fdff;
+        background: linear-gradient(
+          to bottom,
+          rgba(0, 64, 124, 0.22),
+          rgba(15, 79, 142, 0.14)
+        );
+      }
+
+      .lock-center {
+        margin-top: 95px;
+        text-align: center;
+        text-shadow: 0 4px 18px rgba(0, 45, 87, 0.46);
+      }
+
+      .lock-time {
+        font-size: 78px;
+        font-weight: 450;
+        line-height: 0.95;
+        letter-spacing: -1px;
+      }
+
+      .lock-date {
+        margin-top: 8px;
+        font-size: 20px;
+        font-weight: 500;
+        opacity: 0.95;
+      }
+
+      .lock-card {
+        margin: 36px 18px 0;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(18px);
+        border: 1px solid rgba(255, 255, 255, 0.34);
+        padding: 14px 16px;
+        font-size: 13px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .unlock-tip {
+        margin-top: auto;
+        margin-bottom: 36px;
+        text-align: center;
+        font-size: 12px;
+        opacity: 0.92;
+      }
+
+      .unlock-bar {
+        width: 52px;
+        height: 6px;
+        border-radius: 4px;
+        margin: 0 auto 8px;
+        background: rgba(255, 255, 255, 0.88);
+        box-shadow: 0 0 12px rgba(255, 255, 255, 0.33);
+      }
+
+      #HomeScreen {
+        z-index: var(--z-home);
+        padding-bottom: 12px;
+      }
+
+      .home-search {
+        margin: 8px 16px 10px;
+        height: 42px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.62);
+        border: 1px solid rgba(255, 255, 255, 0.58);
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        gap: 10px;
+        backdrop-filter: blur(16px);
+        box-shadow: 0 6px 18px rgba(4, 58, 121, 0.18);
+      }
+
+      .search-dot {
+        width: 14px;
+        height: 14px;
+        border: 2px solid #4d77a0;
+        border-radius: 50%;
+        position: relative;
+      }
+
+      .search-dot::after {
+        content: "";
+        position: absolute;
+        width: 6px;
+        height: 2px;
+        background: #4d77a0;
+        right: -5px;
+        bottom: -1px;
+        transform: rotate(38deg);
+        border-radius: 1px;
+      }
+
+      .search-input {
+        border: 0;
+        outline: 0;
+        background: transparent;
+        width: 100%;
+        font-size: 14px;
+        color: #234463;
+      }
+
+      .home-search-results {
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        top: 94px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid rgba(255, 255, 255, 0.74);
+        box-shadow: 0 12px 22px rgba(11, 67, 124, 0.22);
+        backdrop-filter: blur(14px);
+        padding: 8px;
+        max-height: 240px;
+        overflow: auto;
+        display: none;
+        z-index: 19;
+      }
+
+      .home-search-results.active {
+        display: block;
+      }
+
+      .search-group-title {
+        font-size: 11px;
+        color: #4d6d8c;
+        padding: 6px 8px 4px;
+      }
+
+      .search-result-item {
+        width: 100%;
+        border: 0;
+        border-radius: 12px;
+        min-height: 38px;
+        padding: 0 10px;
+        text-align: left;
+        font-size: 13px;
+        color: #1f4a72;
+        background: rgba(231, 244, 255, 0.78);
+        margin-bottom: 6px;
+      }
+
+      .search-result-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .search-result-item:active {
+        transform: scale(0.99);
+      }
+
+      .desktop-grid {
+        margin: 0 14px;
+        height: 680px;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-auto-rows: 78px;
+        gap: 10px;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid rgba(255, 255, 255, 0.56);
+        border-radius: var(--radius-m);
+        backdrop-filter: blur(20px);
+        box-shadow: 0 10px 24px rgba(4, 63, 126, 0.17);
+      }
+
+      .widget-weather {
+        grid-column: span 2;
+        grid-row: span 2;
+        border-radius: 24px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        background:
+          radial-gradient(
+            120px 80px at 84% 20%,
+            rgba(255, 255, 255, 0.8),
+            transparent 70%
+          ),
+          linear-gradient(170deg, #ffefac, #ffd56f 34%, #9cc9ff 100%);
+        border-color: rgba(255, 255, 255, 0.72);
+      }
+
+      .weather-top {
+        font-size: 12px;
+        color: #735e1f;
+        font-weight: 600;
+      }
+
+      .weather-temp {
+        font-size: 44px;
+        line-height: 1;
+        color: #10335a;
+        font-weight: 600;
+        letter-spacing: -0.8px;
+      }
+
+      .weather-meta {
+        font-size: 12px;
+        color: #2a5378;
+      }
+
+      .widget-steps {
+        grid-column: span 2;
+        border-radius: 18px;
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(
+          140deg,
+          rgba(255, 255, 255, 0.78),
+          rgba(208, 237, 255, 0.68)
+        );
+      }
+
+      .steps-pill {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: linear-gradient(165deg, #ffad3f, #ff7f2d);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+      }
+
+      .morph-widget {
+        grid-column: span 2;
+        grid-row: span 2;
+        display: none;
+        padding: 12px;
+        border-radius: 22px;
+        background: linear-gradient(
+          150deg,
+          rgba(255, 255, 255, 0.85),
+          rgba(191, 228, 255, 0.9)
+        );
+        animation: spring-in 320ms cubic-bezier(0.19, 1, 0.22, 1);
+      }
+
+      .morph-widget.visible {
+        display: block;
+      }
+
+      .morph-widget h4 {
+        font-size: 14px;
+        color: #173959;
+      }
+
+      .morph-widget p {
+        margin-top: 7px;
+        color: #3c6286;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      .large-folder {
+        grid-column: span 2;
+        grid-row: span 2;
+        border-radius: 24px;
+        padding: 12px;
+        background: linear-gradient(
+          170deg,
+          rgba(255, 255, 255, 0.78),
+          rgba(170, 220, 255, 0.65)
+        );
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .folder-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 6px;
+      }
+
+      .mini-app {
+        width: 58px;
+        height: 58px;
+        border: 0;
+        border-radius: 17px;
+        background: rgba(255, 255, 255, 0.7);
+        box-shadow: 0 10px 16px rgba(0, 50, 100, 0.18);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .mini-app:active {
+        transform: scale(0.96);
+      }
+
+      .mini-app::before {
+        content: "";
+        position: absolute;
+        inset: 1px;
+        border-radius: 15px;
+        background: linear-gradient(
+          165deg,
+          rgba(255, 255, 255, 0.75),
+          rgba(197, 230, 255, 0.72)
+        );
+        z-index: 0;
+      }
+
+      .mini-icon {
+        position: relative;
+        z-index: 1;
+        width: 29px;
+        height: 29px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(180deg, #38a8ff, #0f74eb);
+        color: #fff;
+      }
+
+      .mini-app.mini-green .mini-icon {
+        background: linear-gradient(180deg, #4ccf77, #1fa95a);
+      }
+
+      .mini-app.mini-orange .mini-icon {
+        background: linear-gradient(180deg, #ffb85d, #ff8a34);
+      }
+
+      .mini-app.mini-violet .mini-icon {
+        background: linear-gradient(180deg, #8a8eff, #5d62ff);
+      }
+
+      .mini-icon svg {
+        width: 18px;
+        height: 18px;
+        stroke-width: 2.2;
+      }
+
+      .app-icon-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        position: relative;
+      }
+
+      .app-icon {
+        width: 58px;
+        height: 58px;
+        border-radius: 17px;
+        border: 1px solid rgba(255, 255, 255, 0.65);
+        background: rgba(255, 255, 255, 0.7);
+        box-shadow: 0 10px 16px rgba(0, 50, 100, 0.18);
+        color: #0d355d;
+        font-size: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        transition:
+          transform 180ms ease,
+          box-shadow 220ms ease;
+        position: relative;
+        overflow: hidden;
+        border: 0;
+      }
+
+      .app-icon::before {
+        content: "";
+        position: absolute;
+        inset: 1px;
+        border-radius: 15px;
+        background: linear-gradient(
+          165deg,
+          rgba(255, 255, 255, 0.75),
+          rgba(197, 230, 255, 0.72)
+        );
+        z-index: 0;
+      }
+
+      .app-icon .glyph {
+        position: relative;
+        z-index: 1;
+        width: 29px;
+        height: 29px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(180deg, #38a8ff, #0f74eb);
+        color: #fff;
+        font-size: 12px;
+      }
+
+      .app-icon .glyph svg {
+        width: 18px;
+        height: 18px;
+        stroke-width: 2.2;
+      }
+
+      .app-icon.app-green .glyph {
+        background: linear-gradient(180deg, #4ccf77, #1fa95a);
+      }
+
+      .app-icon.app-orange .glyph {
+        background: linear-gradient(180deg, #ffb85d, #ff8a34);
+      }
+
+      .app-icon.app-violet .glyph {
+        background: linear-gradient(180deg, #8a8eff, #5d62ff);
+      }
+
+      .app-icon.app-cyan .glyph {
+        background: linear-gradient(180deg, #3ed3de, #1e9dac);
+      }
+
+      .app-icon:active {
+        transform: scale(0.94);
+        box-shadow: 0 8px 12px rgba(0, 52, 106, 0.15);
+      }
+
+      .icon-title {
+        font-size: 11px;
+        color: #08365d;
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+        white-space: nowrap;
+      }
+
+      .snippet-bar {
+        width: 20px;
+        height: 3px;
+        border-radius: 3px;
+        background: rgba(11, 62, 114, 0.35);
+        position: absolute;
+        bottom: 16px;
+      }
+
+      .dock {
+        position: absolute;
+        left: 14px;
+        right: 14px;
+        bottom: 12px;
+        height: 74px;
+        border-radius: 22px;
+        background: rgba(235, 248, 255, 0.64);
+        border: 1px solid rgba(255, 255, 255, 0.77);
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        backdrop-filter: blur(22px);
+        box-shadow: var(--shadow);
+      }
+
+      .dock .app-icon-wrap {
+        gap: 0;
+      }
+
+      .home-indicator {
+        position: absolute;
+        width: 130px;
+        height: 5px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.85);
+        left: 50%;
+        bottom: 4px;
+        transform: translateX(-50%);
+        box-shadow: 0 2px 6px rgba(0, 47, 95, 0.3);
+      }
+
+      #AppContainer {
+        z-index: var(--z-app);
+        background: rgba(218, 241, 255, 0.85);
+        backdrop-filter: blur(12px);
+      }
+
+      .app-page {
+        position: absolute;
+        inset: 0;
+        display: none;
+        background: linear-gradient(180deg, #e8f4ff 0%, #d3ebff 100%);
+        color: #163251;
+      }
+
+      .app-page.active {
+        display: block;
+        animation: app-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      .app-header {
+        height: 58px;
+        padding: 16px 14px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 650;
+      }
+
+      .back-btn {
+        border: 0;
+        width: 34px;
+        height: 34px;
+        border-radius: 11px;
+        background: rgba(255, 255, 255, 0.72);
+        color: #1b4e7f;
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      .app-body {
+        height: calc(100% - 58px);
+        overflow: auto;
+        padding: 10px 14px 88px;
+      }
+
+      .setting-account {
+        border-radius: 24px;
+        background: linear-gradient(150deg, #5db6ff, #2a89ed);
+        padding: 16px;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+        box-shadow: 0 14px 24px rgba(20, 111, 200, 0.26);
+      }
+
+      .avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(150deg, #fff, #d7ecff);
+        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.6);
+      }
+
+      .list-card {
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid rgba(255, 255, 255, 0.66);
+        border-radius: 18px;
+        margin-bottom: 12px;
+        overflow: hidden;
+        box-shadow: 0 8px 18px rgba(14, 72, 130, 0.14);
+      }
+
+      .row {
+        min-height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 14px;
+        font-size: 14px;
+        border-bottom: 1px solid rgba(12, 70, 130, 0.08);
+      }
+
+      .row:last-child {
+        border-bottom: 0;
+      }
+
+      .sub {
+        color: #4f6d8e;
+        font-size: 12px;
+      }
+
+      .switch {
+        width: 42px;
+        height: 24px;
+        border-radius: 20px;
+        background: #c8d8e8;
+        position: relative;
+        transition: background 180ms ease;
+        border: 0;
+      }
+
+      .switch::after {
+        content: "";
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        left: 2px;
+        top: 2px;
+        background: white;
+        transition: left 180ms ease;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      }
+
+      .switch.on {
+        background: #2f95ff;
+      }
+
+      .switch.on::after {
+        left: 20px;
+      }
+
+      .slider {
+        width: 100%;
+        accent-color: #2e8df2;
+      }
+
+      .moment-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-auto-rows: 70px;
+        gap: 8px;
+      }
+
+      .photo-tile {
+        border-radius: 16px;
+        overflow: hidden;
+        position: relative;
+        cursor: pointer;
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        box-shadow: 0 8px 16px rgba(12, 58, 108, 0.14);
+        background-size: cover;
+        background-position: center;
+      }
+
+      .photo-tile.big {
+        grid-column: span 2;
+        grid-row: span 2;
+      }
+
+      .photo-tile.wide {
+        grid-column: span 2;
+      }
+
+      .photo-tag {
+        position: absolute;
+        left: 8px;
+        bottom: 8px;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.95);
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+      }
+
+      .photo-viewer {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 8;
+        overflow: hidden;
+        touch-action: none;
+      }
+
+      .photo-viewer.active {
+        display: flex;
+      }
+
+      .viewer-img {
+        width: 86%;
+        height: 62%;
+        border-radius: 22px;
+        background-size: cover;
+        background-position: center;
+        transition: transform 120ms linear;
+        transform-origin: center center;
+      }
+
+      .viewer-close {
+        position: absolute;
+        top: 22px;
+        right: 14px;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: 0;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.2);
+        font-size: 20px;
+      }
+
+      .service-cards {
+        display: grid;
+        gap: 10px;
+      }
+
+      .service-card {
+        background: rgba(255, 255, 255, 0.79);
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        border-radius: 18px;
+        padding: 12px;
+        box-shadow: 0 8px 16px rgba(14, 74, 136, 0.13);
+      }
+
+      .service-card button {
+        margin-top: 8px;
+        border: 0;
+        background: #2388f3;
+        color: #fff;
+        border-radius: 10px;
+        font-size: 12px;
+        padding: 6px 10px;
+      }
+
+      .meetime-bg {
+        width: 100%;
+        height: 360px;
+        border-radius: 26px;
+        background:
+          radial-gradient(
+            130px 130px at 50% 30%,
+            rgba(255, 255, 255, 0.5),
+            transparent 80%
+          ),
+          linear-gradient(
+            180deg,
+            rgba(27, 119, 213, 0.35),
+            rgba(13, 88, 159, 0.65)
+          );
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(8px);
+      }
+
+      .meetime-avatar {
+        width: 130px;
+        height: 130px;
+        border-radius: 50%;
+        margin: 42px auto 16px;
+        background: linear-gradient(160deg, #ebf6ff, #a8cff4);
+        filter: blur(0.2px);
+        box-shadow: 0 12px 26px rgba(8, 59, 111, 0.35);
+      }
+
+      .meetime-label {
+        text-align: center;
+        color: #f4fbff;
+        font-size: 22px;
+        font-weight: 550;
+        text-shadow: 0 3px 10px rgba(2, 40, 77, 0.4);
+      }
+
+      .secure {
+        text-align: center;
+        color: #d8f0ff;
+        font-size: 13px;
+        margin-top: 8px;
+      }
+
+      .dialer {
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 20px;
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.7);
+      }
+
+      .dial-input {
+        width: 100%;
+        border: 0;
+        border-radius: 12px;
+        background: rgba(240, 248, 255, 0.9);
+        font-size: 22px;
+        text-align: center;
+        padding: 10px 8px;
+        color: #204364;
+        letter-spacing: 1px;
+        outline: 0;
+      }
+
+      .dial-pad {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .dial-key {
+        height: 54px;
+        border: 0;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.95);
+        font-size: 20px;
+        color: #19456d;
+        box-shadow: 0 6px 12px rgba(8, 60, 109, 0.12);
+      }
+
+      .dial-actions {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+      }
+
+      .btn {
+        flex: 1;
+        border: 0;
+        border-radius: 14px;
+        height: 44px;
+        color: white;
+        font-size: 14px;
+        font-weight: 650;
+      }
+
+      .btn-call {
+        background: linear-gradient(180deg, #42c870, #1ca65b);
+      }
+
+      .btn-hang {
+        background: linear-gradient(180deg, #ff6f6f, #df4343);
+      }
+
+      .call-status {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #3d5c7b;
+        text-align: center;
+      }
+
+      .files-shell {
+        display: grid;
+        gap: 10px;
+      }
+
+      .path {
+        font-size: 12px;
+        color: #4f6b88;
+      }
+
+      .file-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .tiny-btn {
+        border: 0;
+        background: #2189f2;
+        color: #fff;
+        border-radius: 10px;
+        height: 34px;
+        padding: 0 12px;
+        font-size: 12px;
+        white-space: nowrap;
+        min-width: 78px;
+        flex: 0 0 auto;
+      }
+
+      .file-list {
+        background: rgba(255, 255, 255, 0.83);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.74);
+        overflow: hidden;
+      }
+
+      .file-item {
+        height: 44px;
+        padding: 0 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(10, 63, 119, 0.08);
+        font-size: 13px;
+      }
+
+      .file-item:last-child {
+        border-bottom: 0;
+      }
+
+      .file-name {
+        cursor: pointer;
+      }
+
+      .danger {
+        background: transparent;
+        border: 0;
+        color: #dd5353;
+        font-size: 12px;
+      }
+
+      .browser-box {
+        display: grid;
+        gap: 8px;
+      }
+
+      .url-row {
+        display: flex;
+        gap: 6px;
+      }
+
+      .url-input {
+        flex: 1;
+        border: 0;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.84);
+        padding: 10px 10px;
+        font-size: 13px;
+        outline: 0;
+        color: #1b4268;
+      }
+
+      .web-frame {
+        width: 100%;
+        height: 500px;
+        border: 0;
+        border-radius: 18px;
+        background: white;
+        box-shadow: 0 8px 16px rgba(9, 58, 108, 0.13);
+      }
+
+      .messages-wrap {
+        display: grid;
+        grid-template-columns: 40% 60%;
+        gap: 8px;
+        height: 560px;
+      }
+
+      .message-filters {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .filter-pill {
+        border: 0;
+        height: 30px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.86);
+        color: #2a5278;
+        font-size: 12px;
+      }
+
+      .filter-pill.active {
+        background: linear-gradient(180deg, #44a9ff, #1f83ee);
+        color: #fff;
+      }
+
+      .mail-list,
+      .mail-detail {
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.66);
+        overflow: auto;
+        padding: 8px;
+      }
+
+      .mail-item {
+        border-radius: 12px;
+        padding: 8px;
+        margin-bottom: 6px;
+        background: rgba(238, 248, 255, 0.9);
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      .mail-item.active {
+        background: #d8ecff;
+      }
+
+      .calc {
+        width: 100%;
+        max-width: 300px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.84);
+        border: 1px solid rgba(255, 255, 255, 0.77);
+        border-radius: 20px;
+        padding: 12px;
+        box-shadow: 0 10px 20px rgba(6, 61, 117, 0.14);
+      }
+
+      .calc-display {
+        width: 100%;
+        height: 62px;
+        border: 0;
+        text-align: right;
+        border-radius: 14px;
+        background: #eef7ff;
+        padding: 0 10px;
+        font-size: 30px;
+        color: #1b3d63;
+        outline: 0;
+        margin-bottom: 10px;
+      }
+
+      .calc-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .calc-key {
+        height: 48px;
+        border: 0;
+        border-radius: 13px;
+        background: rgba(255, 255, 255, 0.92);
+        color: #19476f;
+        font-size: 18px;
+        box-shadow: 0 6px 12px rgba(6, 60, 109, 0.08);
+      }
+
+      .calc-key.op {
+        background: linear-gradient(180deg, #49abff, #2d83ec);
+        color: #fff;
+      }
+
+      .editor-wrap {
+        background: rgba(255, 255, 255, 0.82);
+        border-radius: 18px;
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.76);
+        box-shadow: 0 10px 20px rgba(9, 62, 112, 0.12);
+      }
+
+      .editor-wrap input,
+      .editor-wrap textarea {
+        width: 100%;
+        border: 0;
+        border-radius: 10px;
+        background: #edf7ff;
+        color: #1c4166;
+        outline: 0;
+        font-size: 13px;
+        padding: 10px;
+        margin-bottom: 8px;
+      }
+
+      .editor-wrap textarea {
+        height: 320px;
+        resize: none;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .camera-wrap {
+        display: grid;
+        gap: 10px;
+      }
+
+      .camera-preview {
+        width: 100%;
+        height: 440px;
+        border-radius: 20px;
+        background: #102339;
+        object-fit: cover;
+      }
+
+      .camera-canvas {
+        display: none;
+      }
+
+      .camera-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+      }
+
+      .capture-btn {
+        width: 74px;
+        height: 74px;
+        border-radius: 50%;
+        border: 5px solid #e9f6ff;
+        background: linear-gradient(180deg, #ffffff, #d4e9f9);
+        box-shadow: 0 8px 16px rgba(6, 60, 112, 0.18);
+      }
+
+      #ControlPanel,
+      #NotificationCenter,
+      #ServiceCenter {
+        z-index: var(--z-overlays);
+        background: rgba(12, 32, 62, 0.26);
+        backdrop-filter: blur(14px);
+        padding-top: 52px;
+      }
+
+      .overlay-panel {
+        margin: 0 10px;
+        border-radius: 26px;
+        background: linear-gradient(
+          180deg,
+          rgba(225, 244, 255, 0.95),
+          rgba(181, 224, 255, 0.94)
+        );
+        border: 1px solid rgba(255, 255, 255, 0.66);
+        padding: 12px;
+        box-shadow: 0 16px 30px rgba(6, 55, 106, 0.32);
+        max-height: 760px;
+        overflow: auto;
+        transform-origin: top center;
+        animation: pull-down 280ms cubic-bezier(0.21, 0.88, 0.28, 1.2);
+      }
+
+      .overlay-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        font-weight: 700;
+        color: #18466d;
+      }
+
+      .close-overlay {
+        width: 30px;
+        height: 30px;
+        border: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.8);
+        color: #18466d;
+        font-size: 18px;
+      }
+
+      .quick-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .quick-btn {
+        width: 58px;
+        height: 58px;
+        border: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.84);
+        color: #23537e;
+        font-size: 12px;
+        font-weight: 600;
+        display: grid;
+        place-items: center;
+        justify-self: center;
+        text-align: center;
+      }
+
+      .quick-btn.active {
+        background: linear-gradient(180deg, #42a8ff, #1574e8);
+        color: #fff;
+      }
+
+      .media-card {
+        border-radius: 18px;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.84);
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #21486b;
+        font-size: 13px;
+      }
+
+      .volume-bar {
+        width: 100%;
+        margin: 8px 0 12px;
+        accent-color: #2388f4;
+      }
+
+      .super-device {
+        position: relative;
+        border-radius: 20px;
+        min-height: 240px;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.86),
+          rgba(210, 236, 255, 0.8)
+        );
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        overflow: hidden;
+        padding: 10px;
+      }
+
+      .device-center {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 94px;
+        height: 94px;
+        border-radius: 50%;
+        background: linear-gradient(180deg, #4dafff, #1c7be9);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        font-size: 13px;
+        box-shadow: 0 10px 18px rgba(24, 110, 190, 0.35);
+        text-align: center;
+      }
+
+      .device-bubble {
+        position: absolute;
+        width: 84px;
+        height: 84px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.85);
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+        color: #1f4e77;
+        text-align: center;
+        box-shadow: 0 6px 14px rgba(12, 70, 132, 0.18);
+        touch-action: none;
+        transition:
+          left 260ms cubic-bezier(0.22, 0.9, 0.24, 1.22),
+          top 260ms cubic-bezier(0.22, 0.9, 0.24, 1.22),
+          transform 180ms ease,
+          background 180ms ease;
+      }
+
+      .device-bubble.dragging {
+        transition: none;
+        transform: scale(1.05);
+      }
+
+      .device-bubble.connected {
+        background: linear-gradient(180deg, #64bcff, #2d8def);
+        color: white;
+      }
+
+      .device-status {
+        margin-top: 12px;
+        font-size: 12px;
+        color: #356185;
+      }
+
+      #NotificationCenter .notice-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .notice-item {
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.75);
+        padding: 10px;
+        font-size: 13px;
+        color: #274f72;
+      }
+
+      #ServiceCenter .overlay-panel {
+        margin-top: 140px;
+        transform-origin: bottom center;
+        animation: service-rise 320ms cubic-bezier(0.2, 0.88, 0.28, 1);
+      }
+
+      #SheetLayer {
+        z-index: var(--z-sheet);
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 8px;
+        display: grid;
+        place-items: end center;
+        pointer-events: none;
+      }
+
+      .sheet {
+        min-width: 250px;
+        max-width: 340px;
+        border-radius: 18px;
+        background: rgba(247, 252, 255, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow: 0 14px 24px rgba(4, 46, 90, 0.22);
+        padding: 12px 14px;
+        font-size: 13px;
+        color: #1f4568;
+        margin-bottom: 8px;
+        animation: sheet-in 360ms cubic-bezier(0.2, 0.88, 0.3, 1.15);
+        pointer-events: auto;
+      }
+
+      #DialogLayer {
+        z-index: calc(var(--z-sheet) + 1);
+        position: absolute;
+        inset: 0;
+        display: none;
+        place-items: center;
+        background: rgba(8, 27, 49, 0.42);
+        backdrop-filter: blur(6px);
+        padding: 16px;
+      }
+
+      #DialogLayer.active {
+        display: grid;
+      }
+
+      .dialog-card {
+        width: 100%;
+        max-width: 320px;
+        border-radius: 18px;
+        background: rgba(248, 253, 255, 0.98);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow: 0 16px 26px rgba(5, 43, 83, 0.28);
+        padding: 12px;
+      }
+
+      .dialog-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #20496d;
+      }
+
+      .dialog-msg {
+        margin-top: 6px;
+        font-size: 13px;
+        color: #3a5f82;
+        line-height: 1.45;
+      }
+
+      .dialog-input {
+        width: 100%;
+        border: 0;
+        border-radius: 10px;
+        background: #eaf5ff;
+        color: #1f466a;
+        padding: 9px 10px;
+        margin-top: 10px;
+        outline: 0;
+      }
+
+      .dialog-actions {
+        margin-top: 12px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .dialog-btn {
+        border: 0;
+        min-width: 66px;
+        height: 32px;
+        border-radius: 9px;
+        font-size: 12px;
+        padding: 0 10px;
+      }
+
+      .dialog-btn.cancel {
+        background: #e0ecf8;
+        color: #31587f;
+      }
+
+      .dialog-btn.ok {
+        background: #2f94f9;
+        color: #fff;
+      }
+
+      .dialog-btn.ok.danger {
+        background: #df4b4b;
+      }
+
+      #Keyboard {
+        z-index: var(--z-keyboard);
+        position: absolute;
+        left: 6px;
+        right: 6px;
+        bottom: 6px;
+        border-radius: 18px;
+        background: linear-gradient(
+          180deg,
+          rgba(248, 251, 255, 0.97),
+          rgba(230, 238, 248, 0.98)
+        );
+        border: 1px solid rgba(255, 255, 255, 0.86);
+        padding: 8px;
+        display: none;
+        box-shadow: 0 12px 26px rgba(0, 37, 78, 0.3);
+      }
+
+      #Keyboard.active {
+        display: block;
+        animation: keyboard-up 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      .key-row {
+        display: grid;
+        gap: 6px;
+        margin-bottom: 6px;
+        grid-template-columns: repeat(10, minmax(0, 1fr));
+      }
+
+      .key {
+        border: 0;
+        height: 34px;
+        border-radius: 9px;
+        background: #fff;
+        color: #2b4e72;
+        font-size: 14px;
+        box-shadow: 0 3px 7px rgba(16, 57, 96, 0.15);
+      }
+
+      .key.control {
+        background: #dfe7f0;
+        font-size: 12px;
+      }
+
+      .key.space {
+        grid-column: span 5;
+      }
+
+      #TaskSwitcher {
+        position: absolute;
+        inset: 0;
+        z-index: calc(var(--z-app) + 2);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(16, 41, 73, 0.38);
+        backdrop-filter: blur(8px);
+      }
+
+      #TaskSwitcher.active {
+        display: flex;
+      }
+
+      .task-card {
+        width: 80%;
+        height: 72%;
+        border-radius: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        background: rgba(255, 255, 255, 0.68);
+        box-shadow: 0 12px 24px rgba(2, 39, 76, 0.3);
+        overflow: hidden;
+        position: relative;
+        transform: scale(0.9);
+        animation: task-in 220ms ease forwards;
+      }
+
+      .task-title {
+        height: 40px;
+        padding: 10px 12px;
+        font-size: 12px;
+        color: #2a5177;
+        background: rgba(238, 248, 255, 0.72);
+      }
+
+      .task-snapshot {
+        height: calc(100% - 40px);
+        display: grid;
+        place-items: center;
+        color: #3e6285;
+        font-size: 14px;
+      }
+
+      @keyframes app-in {
+        from {
+          transform: translateY(22px) scale(0.98);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0) scale(1);
+          opacity: 1;
+        }
+      }
+
+      @keyframes pull-down {
+        from {
+          transform: translateY(-32px) scale(0.98);
+          opacity: 0.3;
+        }
+        to {
+          transform: translateY(0) scale(1);
+          opacity: 1;
+        }
+      }
+
+      @keyframes service-rise {
+        from {
+          transform: translateY(34px) scale(0.97);
+          opacity: 0.4;
+        }
+        to {
+          transform: translateY(0) scale(1);
+          opacity: 1;
+        }
+      }
+
+      @keyframes sheet-in {
+        0% {
+          transform: translateY(100px);
+          opacity: 0;
+        }
+        62% {
+          transform: translateY(-8px);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes keyboard-up {
+        from {
+          transform: translateY(34px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes spring-in {
+        0% {
+          transform: scale(0.75);
+          opacity: 0.2;
+        }
+        68% {
+          transform: scale(1.05);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      @keyframes task-in {
+        from {
+          transform: scale(0.75);
+          opacity: 0;
+        }
+        to {
+          transform: scale(0.9);
+          opacity: 1;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .device-shell {
+          transform: scale(0.95);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="device-shell">
+      <div class="phone" id="Phone">
+        <div class="camera-hole"></div>
+        <div id="Wallpaper"></div>
+
+        <section id="LockScreen" class="layer active">
+          <div class="status-bar">
+            <div id="lockStatusTime">08:08</div>
+            <div class="status-right">
+              <span class="signal"></span><span class="wifi"></span
+              ><span class="battery"></span>
+            </div>
+          </div>
+          <div class="lock-center">
+            <div class="lock-time" id="lockTime">08:08</div>
+            <div class="lock-date" id="lockDate">2月6日 星期五</div>
+          </div>
+          <div class="lock-card">
+            <span>系统提示</span>
+            <span>左上角下滑通知 · 右上角下滑控制中心</span>
+          </div>
+          <div
+            style="
+              margin-top: 8px;
+              text-align: center;
+              font-size: 11px;
+              opacity: 0.82;
+            "
+            id="buildId"
+          >
+            HarmonyOS 版本: 4.0.0
+          </div>
+          <div class="unlock-tip">
+            <div class="unlock-bar"></div>
+            上滑解锁
+          </div>
+        </section>
+
+        <section id="HomeScreen" class="layer">
+          <div class="status-bar">
+            <div id="homeTime">08:08</div>
+            <div class="status-right">
+              <span class="signal"></span><span class="wifi"></span
+              ><span class="battery"></span>
+            </div>
+          </div>
+          <div class="home-search">
+            <span class="search-dot"></span>
+            <input
+              id="homeSearch"
+              class="search-input needs-keyboard"
+              placeholder="搜索应用、服务、设置"
+            />
+          </div>
+          <div id="homeSearchResults" class="home-search-results"></div>
+          <div class="desktop-grid" id="desktopGrid">
+            <div class="widget-weather card">
+              <div class="weather-top">今天 · 深圳</div>
+              <div class="weather-temp">26°</div>
+              <div class="weather-meta">多云转晴 · 空气优 · 紫外线中等</div>
+            </div>
+
+            <div class="large-folder card">
+              <div>
+                <div style="font-size: 13px; font-weight: 700; color: #214969">
+                  工具
+                </div>
+                <div class="folder-grid">
+                  <button
+                    class="mini-app mini-violet"
+                    data-app-open="calculator"
+                    aria-label="计算器"
+                    title="计算器"
+                  >
+                    <span class="mini-icon"
+                      ><i data-lucide="calculator"></i
+                    ></span>
+                  </button>
+                  <button
+                    class="mini-app"
+                    data-app-open="files"
+                    aria-label="文件"
+                    title="文件"
+                  >
+                    <span class="mini-icon"
+                      ><i data-lucide="folder-open"></i
+                    ></span>
+                  </button>
+                  <button
+                    class="mini-app mini-green"
+                    data-app-open="editor"
+                    aria-label="文档"
+                    title="文档"
+                  >
+                    <span class="mini-icon"
+                      ><i data-lucide="file-text"></i
+                    ></span>
+                  </button>
+                  <button
+                    class="mini-app mini-orange"
+                    data-app-open="camera"
+                    aria-label="相机"
+                    title="相机"
+                  >
+                    <span class="mini-icon"><i data-lucide="camera"></i></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="widget-steps card">
+              <div>
+                <div style="font-size: 12px; color: #3c6387">健康</div>
+                <div style="font-size: 25px; font-weight: 700; color: #184166">
+                  3218 步
+                </div>
+              </div>
+              <div class="steps-pill"></div>
+            </div>
+
+            <div class="app-icon-wrap" data-widget-target="weatherMorph">
+              <button class="app-icon app-cyan" data-app-open="servicecenter">
+                <span class="glyph"><i data-lucide="layout-grid"></i></span>
+              </button>
+              <div class="snippet-bar"></div>
+              <div class="icon-title">服务中心</div>
+            </div>
+
+            <div class="app-icon-wrap" data-widget-target="galleryMorph">
+              <button class="app-icon app-orange" data-app-open="gallery">
+                <span class="glyph"><i data-lucide="images"></i></span>
+              </button>
+              <div class="snippet-bar"></div>
+              <div class="icon-title">图库</div>
+            </div>
+
+            <div class="app-icon-wrap">
+              <button class="app-icon app-green" data-app-open="meetime">
+                <span class="glyph"><i data-lucide="phone-call"></i></span>
+              </button>
+              <div class="icon-title">MeeTime</div>
+            </div>
+
+            <div class="app-icon-wrap">
+              <button class="app-icon app-violet" data-app-open="settings">
+                <span class="glyph"><i data-lucide="settings"></i></span>
+              </button>
+              <div class="icon-title">设置</div>
+            </div>
+
+            <div class="morph-widget card" id="weatherMorph">
+              <h4>天气服务卡片</h4>
+              <p>体感 27°，湿度 63%，建议穿着轻薄外套。</p>
+              <p>上滑图标可瞬时呼出万能卡片。</p>
+            </div>
+
+            <div class="morph-widget card" id="galleryMorph">
+              <h4>图库服务卡片</h4>
+              <p>最近 24 小时新增 18 张照片。</p>
+              <p>点击可快速进入最近时刻。</p>
+            </div>
+
+            <div class="app-icon-wrap">
+              <button class="app-icon app-green" data-app-open="phone">
+                <span class="glyph"><i data-lucide="phone"></i></span>
+              </button>
+              <div class="icon-title">电话</div>
+            </div>
+
+            <div class="app-icon-wrap">
+              <button class="app-icon" data-app-open="messages">
+                <span class="glyph"><i data-lucide="message-circle"></i></span>
+              </button>
+              <div class="icon-title">信息/邮件</div>
+            </div>
+
+            <div class="app-icon-wrap">
+              <button class="app-icon app-cyan" data-app-open="browser">
+                <span class="glyph"><i data-lucide="globe"></i></span>
+              </button>
+              <div class="icon-title">浏览器</div>
+            </div>
+          </div>
+
+          <div class="dock">
+            <div class="app-icon-wrap">
+              <button class="app-icon app-green" data-app-open="phone">
+                <span class="glyph"><i data-lucide="phone"></i></span>
+              </button>
+            </div>
+            <div class="app-icon-wrap">
+              <button class="app-icon" data-app-open="messages">
+                <span class="glyph"><i data-lucide="message-circle"></i></span>
+              </button>
+            </div>
+            <div class="app-icon-wrap">
+              <button class="app-icon app-cyan" data-app-open="browser">
+                <span class="glyph"><i data-lucide="globe"></i></span>
+              </button>
+            </div>
+            <div class="app-icon-wrap">
+              <button class="app-icon app-orange" data-app-open="camera">
+                <span class="glyph"><i data-lucide="camera"></i></span>
+              </button>
+            </div>
+          </div>
+          <div class="home-indicator"></div>
+        </section>
+
+        <section id="AppContainer" class="layer">
+          <div id="TaskSwitcher">
+            <div class="task-card">
+              <div class="task-title" id="taskTitle">最近任务</div>
+              <div class="task-snapshot" id="taskSnapshot">
+                上滑返回桌面，停顿进入此视图
+              </div>
+            </div>
+          </div>
+
+          <article class="app-page" id="app-settings">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              设置
+            </div>
+            <div class="app-body">
+              <div class="setting-account">
+                <div class="avatar"></div>
+                <div>
+                  <div style="font-size: 17px; font-weight: 650">华为账号</div>
+                  <div style="font-size: 13px; opacity: 0.92">
+                    已登录 · HUAWEI ID
+                  </div>
+                </div>
+              </div>
+
+              <div class="list-card">
+                <div class="row">
+                  <span>超级终端</span
+                  ><button
+                    class="switch on setting-switch"
+                    data-key="super"
+                  ></button>
+                </div>
+                <div class="row">
+                  <span>华为分享 Huawei Share</span
+                  ><button
+                    class="switch setting-switch"
+                    data-key="share"
+                  ></button>
+                </div>
+                <div class="row">
+                  <span>显示和亮度</span><span class="sub">自动</span>
+                </div>
+                <div class="row">
+                  <div style="flex: 1">
+                    <div>亮度</div>
+                    <input
+                      class="slider"
+                      id="brightnessSlider"
+                      type="range"
+                      min="20"
+                      max="100"
+                      value="72"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="list-card">
+                <div class="row"><span>关于手机</span></div>
+                <div class="row">
+                  <span class="sub">HarmonyOS 版本: 4.0.0</span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="app-page" id="app-gallery">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              图库 · 时刻
+            </div>
+            <div class="app-body">
+              <div class="moment-grid" id="momentGrid"></div>
+            </div>
+            <div class="photo-viewer" id="photoViewer">
+              <button class="viewer-close" id="closeViewer">×</button>
+              <div class="viewer-img" id="viewerImg"></div>
+            </div>
+          </article>
+
+          <article class="app-page" id="app-servicecenter">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              服务中心
+            </div>
+            <div class="app-body">
+              <div class="service-cards" id="serviceCardsApp">
+                <div class="service-card">
+                  <div style="font-weight: 650">快递服务</div>
+                  <div class="sub">3 个包裹运输中 · 实时状态卡片</div>
+                  <button data-add-service="快递">添加到桌面</button>
+                </div>
+                <div class="service-card">
+                  <div style="font-weight: 650">今日日程</div>
+                  <div class="sub">14:00 项目评审 · 18:30 健身</div>
+                  <button data-add-service="日程">添加到桌面</button>
+                </div>
+                <div class="service-card">
+                  <div style="font-weight: 650">小艺建议</div>
+                  <div class="sub">推荐通勤路线与天气提醒</div>
+                  <button data-add-service="建议">添加到桌面</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="app-page" id="app-meetime">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              MeeTime 畅连
+            </div>
+            <div class="app-body">
+              <div class="meetime-bg">
+                <div class="meetime-avatar"></div>
+                <div class="meetime-label">陈晨</div>
+                <div class="secure">正在加密通话</div>
+              </div>
+              <div class="dial-actions" style="margin-top: 14px">
+                <button class="btn btn-call" id="meetimeCall">拨打</button>
+                <button class="btn btn-hang" id="meetimeHang">挂断</button>
+              </div>
+              <div class="call-status" id="meetimeStatus">待呼叫</div>
+            </div>
+          </article>
+
+          <article class="app-page" id="app-phone">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              电话
+            </div>
+            <div class="app-body">
+              <div class="dialer">
+                <input
+                  id="dialInput"
+                  class="dial-input needs-keyboard"
+                  placeholder="请输入号码"
+                />
+                <div class="dial-pad" id="dialPad"></div>
+                <div class="dial-actions">
+                  <button class="btn btn-call" id="callBtn">拨号</button>
+                  <button class="btn btn-hang" id="hangBtn">挂断</button>
+                </div>
+                <div class="call-status" id="callStatus">空闲</div>
+              </div>
+            </div>
+          </article>
+
+          <article class="app-page" id="app-files">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              文件
+            </div>
+            <div class="app-body files-shell">
+              <div class="path" id="filePath">/我的文件</div>
+              <div class="file-actions">
+                <button class="tiny-btn" id="newFolderBtn">新建文件夹</button>
+                <button class="tiny-btn" id="newFileBtn">新建文件</button>
+                <button class="tiny-btn" id="upFolderBtn">返回上级</button>
+              </div>
+              <div class="file-list" id="fileList"></div>
+            </div>
+          </article>
+
+          <article class="app-page" id="app-browser">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              浏览器
+            </div>
+            <div class="app-body browser-box">
+              <div class="url-row">
+                <input
+                  id="urlInput"
+                  class="url-input needs-keyboard"
+                  value="about:blank"
+                />
+                <button class="tiny-btn" id="openUrlBtn">打开</button>
+                <button class="tiny-btn" id="openExternalBtn">新标签</button>
+              </div>
+              <div class="sub" id="browserStatus">
+                输入网址后打开，部分站点可能限制嵌入
+              </div>
+              <iframe id="webFrame" class="web-frame" title="网页"></iframe>
+            </div>
+          </article>
+
+          <article class="app-page" id="app-camera">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              相机
+            </div>
+            <div class="app-body camera-wrap">
+              <video
+                id="cameraVideo"
+                class="camera-preview"
+                autoplay
+                muted
+                playsinline
+              ></video>
+              <canvas id="cameraCanvas" class="camera-canvas"></canvas>
+              <div class="camera-actions">
+                <button class="capture-btn" id="captureBtn"></button>
+              </div>
+              <div class="call-status" id="cameraStatus">准备就绪</div>
+            </div>
+          </article>
+
+          <article class="app-page" id="app-messages">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              信息 / 邮件
+            </div>
+            <div class="app-body">
+              <div class="message-filters">
+                <button class="filter-pill active" data-mail-filter="all">
+                  全部
+                </button>
+                <button class="filter-pill" data-mail-filter="短信">
+                  短信
+                </button>
+                <button class="filter-pill" data-mail-filter="邮件">
+                  邮件
+                </button>
+              </div>
+              <div class="messages-wrap">
+                <div class="mail-list" id="mailList"></div>
+                <div class="mail-detail" id="mailDetail">
+                  选择一条消息查看详情
+                </div>
+              </div>
+              <input
+                id="msgInput"
+                class="url-input needs-keyboard"
+                style="margin-top: 8px"
+                placeholder="回复..."
+              />
+            </div>
+          </article>
+
+          <article class="app-page" id="app-calculator">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              计算器
+            </div>
+            <div class="app-body">
+              <div class="calc">
+                <input
+                  id="calcDisplay"
+                  class="calc-display"
+                  value="0"
+                  readonly
+                />
+                <div class="calc-grid" id="calcGrid"></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="app-page" id="app-editor">
+            <div class="app-header">
+              <button class="back-btn" data-nav="back">‹</button>
+              文本编辑器
+            </div>
+            <div class="app-body">
+              <div class="editor-wrap">
+                <input
+                  id="editorName"
+                  class="needs-keyboard"
+                  value="note.txt"
+                  placeholder="文件名"
+                />
+                <textarea
+                  id="editorContent"
+                  class="needs-keyboard"
+                  placeholder="开始编写内容..."
+                ></textarea>
+                <div class="file-actions">
+                  <button class="tiny-btn" id="saveEditorBtn">保存</button>
+                  <span id="editorStatus" class="sub"></span>
+                </div>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section id="ControlPanel" class="layer">
+          <div class="overlay-panel">
+            <div class="overlay-header">
+              <span>控制中心</span>
+              <button class="close-overlay" data-close-overlay="ControlPanel">
+                ×
+              </button>
+            </div>
+            <div class="quick-grid">
+              <button class="quick-btn active" data-toggle-quick>Wi-Fi</button>
+              <button class="quick-btn active" data-toggle-quick>蓝牙</button>
+              <button class="quick-btn" data-toggle-quick>移动网络</button>
+              <button class="quick-btn" data-toggle-quick>手电筒</button>
+              <button class="quick-btn" data-toggle-quick>免打扰</button>
+              <button class="quick-btn active" data-toggle-quick>定位</button>
+            </div>
+            <div class="media-card">
+              <span>媒体播控</span>
+              <span>未在播放</span>
+            </div>
+            <input
+              class="volume-bar"
+              type="range"
+              min="0"
+              max="100"
+              value="68"
+            />
+            <div class="super-device" id="superDevice">
+              <div class="device-center" id="centerDevice">本机<br />手机</div>
+              <div
+                class="device-bubble"
+                data-device="智慧屏"
+                style="left: 12px; top: 18px"
+              >
+                智慧屏
+              </div>
+              <div
+                class="device-bubble"
+                data-device="MatePad"
+                style="right: 10px; top: 24px"
+              >
+                MatePad
+              </div>
+              <div
+                class="device-bubble"
+                data-device="FreeBuds"
+                style="left: 14px; bottom: 16px"
+              >
+                FreeBuds
+              </div>
+              <div
+                class="device-bubble"
+                data-device="Sound X"
+                style="right: 10px; bottom: 18px"
+              >
+                Sound X
+              </div>
+            </div>
+            <div class="device-status" id="deviceStatus">
+              拖拽设备气泡到中央手机，模拟协同连接。
+            </div>
+          </div>
+        </section>
+
+        <section id="NotificationCenter" class="layer">
+          <div class="overlay-panel">
+            <div class="overlay-header">
+              <span>通知中心</span>
+              <button
+                class="close-overlay"
+                data-close-overlay="NotificationCenter"
+              >
+                ×
+              </button>
+            </div>
+            <div class="notice-list">
+              <div class="notice-item">
+                <div style="font-weight: 650">系统提醒</div>
+                <div>HarmonyOS 体验模式运行中。</div>
+              </div>
+              <div class="notice-item">
+                <div style="font-weight: 650">天气</div>
+                <div>未来 2 小时有阵雨，请携带雨具。</div>
+              </div>
+              <div class="notice-item">
+                <div style="font-weight: 650">服务中心</div>
+                <div>可从左下角或右下角斜向上滑呼出。</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="ServiceCenter" class="layer">
+          <div class="overlay-panel">
+            <div class="overlay-header">
+              <span>服务中心</span>
+              <button class="close-overlay" data-close-overlay="ServiceCenter">
+                ×
+              </button>
+            </div>
+            <div class="service-cards" id="serviceCardsOverlay">
+              <div class="service-card">
+                <div style="font-weight: 650">快递提醒</div>
+                <div class="sub">您的包裹已到达转运中心。</div>
+                <button data-add-service="快递">添加到桌面</button>
+              </div>
+              <div class="service-card">
+                <div style="font-weight: 650">出行建议</div>
+                <div class="sub">通勤 32 分钟，建议提前 10 分钟出发。</div>
+                <button data-add-service="出行">添加到桌面</button>
+              </div>
+              <div class="service-card">
+                <div style="font-weight: 650">健身打卡</div>
+                <div class="sub">今日目标 6500 步，已完成 3218 步。</div>
+                <button data-add-service="健身">添加到桌面</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="SheetLayer"></section>
+        <section id="DialogLayer"></section>
+        <section id="Keyboard"></section>
+      </div>
+    </div>
+
+    <script>
+      (() => {
+        const Phone = document.getElementById("Phone");
+        const LockScreen = document.getElementById("LockScreen");
+        const HomeScreen = document.getElementById("HomeScreen");
+        const AppContainer = document.getElementById("AppContainer");
+        const ControlPanel = document.getElementById("ControlPanel");
+        const NotificationCenter =
+          document.getElementById("NotificationCenter");
+        const ServiceCenter = document.getElementById("ServiceCenter");
+        const SheetLayer = document.getElementById("SheetLayer");
+        const DialogLayer = document.getElementById("DialogLayer");
+        const Keyboard = document.getElementById("Keyboard");
+        const TaskSwitcher = document.getElementById("TaskSwitcher");
+        const taskTitle = document.getElementById("taskTitle");
+        const taskSnapshot = document.getElementById("taskSnapshot");
+
+        function initAppIcons() {
+          const nodes = document.querySelectorAll("[data-lucide]");
+          const paths = {
+            "layout-grid": [
+              '<rect x="3" y="3" width="7" height="7" rx="1.4"></rect>',
+              '<rect x="14" y="3" width="7" height="7" rx="1.4"></rect>',
+              '<rect x="3" y="14" width="7" height="7" rx="1.4"></rect>',
+              '<rect x="14" y="14" width="7" height="7" rx="1.4"></rect>',
+            ],
+            images: [
+              '<rect x="3" y="3" width="18" height="18" rx="2"></rect>',
+              '<circle cx="9" cy="9" r="1.5"></circle>',
+              '<path d="m21 15-4.8-4.8a1.6 1.6 0 0 0-2.2 0L7 17"></path>',
+            ],
+            "phone-call": [
+              '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.86 19.86 0 0 1 2.12 4.18 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.72 12.75 12.75 0 0 0 .7 2.8 2 2 0 0 1-.45 2.11L8.1 9.9a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.75 12.75 0 0 0 2.8.7A2 2 0 0 1 22 16.92z"></path>',
+              '<path d="M15 3a6 6 0 0 1 6 6"></path>',
+              '<path d="M15 7a2 2 0 0 1 2 2"></path>',
+            ],
+            settings: [
+              '<circle cx="12" cy="12" r="3"></circle>',
+              '<path d="M19.4 15a1.7 1.7 0 0 0 .33 1.82l.04.04a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.04-.04a1.7 1.7 0 0 0-1.82-.33 1.7 1.7 0 0 0-1.02 1.57V21a2 2 0 0 1-4 0v-.07a1.7 1.7 0 0 0-1.02-1.57 1.7 1.7 0 0 0-1.82.33l-.04.04a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.04-.04A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.57-1.02H3a2 2 0 0 1 0-4h.07A1.7 1.7 0 0 0 4.64 9a1.7 1.7 0 0 0-.33-1.82l-.04-.04a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.04.04A1.7 1.7 0 0 0 8.96 4.6h.07A1.7 1.7 0 0 0 10 3.03V3a2 2 0 0 1 4 0v.07A1.7 1.7 0 0 0 15 4.64a1.7 1.7 0 0 0 1.82-.33l.04-.04a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.04.04A1.7 1.7 0 0 0 19.4 9v.07A1.7 1.7 0 0 0 20.97 10H21a2 2 0 0 1 0 4h-.07A1.7 1.7 0 0 0 19.4 15z"></path>',
+            ],
+            phone: [
+              '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.86 19.86 0 0 1 2.12 4.18 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.72 12.75 12.75 0 0 0 .7 2.8 2 2 0 0 1-.45 2.11L8.1 9.9a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.75 12.75 0 0 0 2.8.7A2 2 0 0 1 22 16.92z"></path>',
+            ],
+            "message-circle": [
+              '<path d="m7.9 20.1-4.4 1.4 1.4-4.4A9 9 0 1 1 7.9 20.1z"></path>',
+            ],
+            globe: [
+              '<circle cx="12" cy="12" r="10"></circle>',
+              '<path d="M2 12h20"></path>',
+              '<path d="M12 2a15 15 0 0 1 0 20"></path>',
+              '<path d="M12 2a15 15 0 0 0 0 20"></path>',
+            ],
+            camera: [
+              '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>',
+              '<circle cx="12" cy="13" r="3"></circle>',
+            ],
+            calculator: [
+              '<rect x="4" y="2" width="16" height="20" rx="2"></rect>',
+              '<line x1="8" y1="6" x2="16" y2="6"></line>',
+              '<line x1="8" y1="11" x2="8" y2="11"></line>',
+              '<line x1="12" y1="11" x2="12" y2="11"></line>',
+              '<line x1="16" y1="11" x2="16" y2="11"></line>',
+              '<line x1="8" y1="15" x2="8" y2="15"></line>',
+              '<line x1="12" y1="15" x2="12" y2="15"></line>',
+              '<line x1="16" y1="15" x2="16" y2="15"></line>',
+              '<line x1="8" y1="19" x2="8" y2="19"></line>',
+              '<line x1="12" y1="19" x2="12" y2="19"></line>',
+              '<line x1="16" y1="19" x2="16" y2="19"></line>',
+            ],
+            "folder-open": [
+              '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v1"></path>',
+              '<path d="M3 10h19l-2 9H5l-2-9z"></path>',
+            ],
+            "file-text": [
+              '<path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"></path>',
+              '<path d="M14 2v5h5"></path>',
+              '<line x1="9" y1="13" x2="15" y2="13"></line>',
+              '<line x1="9" y1="17" x2="15" y2="17"></line>',
+              '<line x1="9" y1="9" x2="11" y2="9"></line>',
+            ],
+          };
+
+          const render = (name) => {
+            const body = (paths[name] || paths["layout-grid"]).join("");
+            return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+          };
+
+          nodes.forEach((node) => {
+            const key = node.getAttribute("data-lucide") || "layout-grid";
+            node.innerHTML = render(key);
+          });
+        }
+
+        const state = {
+          locked: true,
+          currentApp: null,
+          appStack: [],
+          focusedInput: null,
+          cameraStream: null,
+          callActive: false,
+          meetimeActive: false,
+          calcExpr: "",
+          galleryItems: [],
+          editorBinding: null,
+        };
+
+        initAppIcons();
+
+        function setTime() {
+          const now = new Date();
+          const hh = String(now.getHours()).padStart(2, "0");
+          const mm = String(now.getMinutes()).padStart(2, "0");
+          const cnWeek = "日一二三四五六"[now.getDay()];
+          const dateText = `${now.getMonth() + 1}月${now.getDate()}日 星期${cnWeek}`;
+          const t = `${hh}:${mm}`;
+          document.getElementById("lockStatusTime").textContent = t;
+          document.getElementById("lockTime").textContent = t;
+          document.getElementById("homeTime").textContent = t;
+          document.getElementById("lockDate").textContent = dateText;
+        }
+
+        setTime();
+        setInterval(setTime, 1000);
+
+        const showLayer = (layer) => layer.classList.add("active");
+        const hideLayer = (layer) => layer.classList.remove("active");
+
+        function closeOverlays() {
+          hideLayer(ControlPanel);
+          hideLayer(NotificationCenter);
+          hideLayer(ServiceCenter);
+        }
+
+        function unlockPhone() {
+          state.locked = false;
+          hideLayer(LockScreen);
+          showLayer(HomeScreen);
+          showSheet("已解锁");
+        }
+
+        function appName(appId) {
+          const map = {
+            settings: "设置",
+            gallery: "图库",
+            servicecenter: "服务中心",
+            meetime: "MeeTime",
+            phone: "电话",
+            files: "文件",
+            browser: "浏览器",
+            camera: "相机",
+            messages: "信息/邮件",
+            calculator: "计算器",
+            editor: "文本编辑器",
+          };
+          return map[appId] || appId;
+        }
+
+        function goHome() {
+          closeOverlays();
+          hideLayer(AppContainer);
+          TaskSwitcher.classList.remove("active");
+          showLayer(HomeScreen);
+          if (state.currentApp === "camera") stopCamera();
+          state.currentApp = null;
+        }
+
+        function openApp(appId, fromBack) {
+          if (!fromBack && state.currentApp)
+            state.appStack.push(state.currentApp);
+          closeOverlays();
+          showLayer(AppContainer);
+          hideLayer(HomeScreen);
+
+          document
+            .querySelectorAll(".app-page")
+            .forEach((page) => page.classList.remove("active"));
+          const page = document.getElementById(`app-${appId}`);
+          if (!page) return;
+          page.classList.add("active");
+
+          state.currentApp = appId;
+          taskTitle.textContent = `最近任务 · ${appName(appId)}`;
+          taskSnapshot.textContent = `${appName(appId)} 正在运行`;
+
+          if (appId === "camera") startCamera();
+          if (appId !== "camera") stopCamera();
+          if (appId === "editor") {
+            if (state.editorBinding && state.editorBinding.path) {
+              loadFsFileIntoEditor(state.editorBinding.path, true);
+            } else {
+              loadEditor();
+            }
+          }
+        }
+
+        function goBack() {
+          closeOverlays();
+          if (state.currentApp === "camera") stopCamera();
+          const prev = state.appStack.pop();
+          if (prev) openApp(prev, true);
+          else goHome();
+        }
+
+        document.querySelectorAll("[data-app-open]").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const appId = btn.getAttribute("data-app-open");
+            if (appId === "editor") state.editorBinding = null;
+            openApp(appId);
+          });
+        });
+
+        document
+          .querySelectorAll("[data-nav='back']")
+          .forEach((btn) => btn.addEventListener("click", goBack));
+        document.querySelectorAll("[data-close-overlay]").forEach((btn) => {
+          btn.addEventListener("click", () =>
+            hideLayer(document.getElementById(btn.dataset.closeOverlay)),
+          );
+        });
+
+        document.querySelectorAll("[data-toggle-quick]").forEach((btn) => {
+          btn.addEventListener("click", () => btn.classList.toggle("active"));
+        });
+
+        document.querySelectorAll(".setting-switch").forEach((sw) => {
+          sw.addEventListener("click", () => sw.classList.toggle("on"));
+        });
+
+        document
+          .getElementById("brightnessSlider")
+          .addEventListener("input", (e) => {
+            const v = Number(e.target.value) / 100;
+            Phone.style.filter = `brightness(${Math.max(0.55, v)})`;
+          });
+
+        const homeSearch = document.getElementById("homeSearch");
+        const homeSearchResults = document.getElementById("homeSearchResults");
+        const homeSearchApps = [
+          { id: "settings", name: "设置" },
+          { id: "gallery", name: "图库" },
+          { id: "servicecenter", name: "服务中心" },
+          { id: "meetime", name: "MeeTime" },
+          { id: "phone", name: "电话" },
+          { id: "files", name: "文件" },
+          { id: "browser", name: "浏览器" },
+          { id: "camera", name: "相机" },
+          { id: "messages", name: "信息/邮件" },
+          { id: "calculator", name: "计算器" },
+          { id: "editor", name: "文本编辑器" },
+        ];
+
+        function hideHomeSearchResults() {
+          homeSearchResults.classList.remove("active");
+          homeSearchResults.innerHTML = "";
+        }
+
+        function openFromHomeSearchWeb(query) {
+          openApp("browser");
+          urlInput.value = query;
+          openWebByInput(false);
+          hideHomeSearchResults();
+        }
+
+        function renderHomeSearchResults(rawQuery) {
+          const query = (rawQuery || "").trim();
+          if (!query) {
+            hideHomeSearchResults();
+            return;
+          }
+          const qLower = query.toLowerCase();
+          const appHits = homeSearchApps
+            .filter(
+              (app) =>
+                app.name.includes(query) ||
+                app.id.includes(qLower) ||
+                app.name.toLowerCase().includes(qLower),
+            )
+            .slice(0, 6);
+
+          homeSearchResults.innerHTML = "";
+
+          if (appHits.length) {
+            const appTitle = document.createElement("div");
+            appTitle.className = "search-group-title";
+            appTitle.textContent = "应用";
+            homeSearchResults.appendChild(appTitle);
+
+            appHits.forEach((app) => {
+              const btn = document.createElement("button");
+              btn.className = "search-result-item";
+              btn.textContent = `打开应用 · ${app.name}`;
+              btn.addEventListener("click", () => {
+                homeSearch.value = "";
+                if (app.id === "editor") state.editorBinding = null;
+                openApp(app.id);
+                hideHomeSearchResults();
+              });
+              homeSearchResults.appendChild(btn);
+            });
+          }
+
+          const webTitle = document.createElement("div");
+          webTitle.className = "search-group-title";
+          webTitle.textContent = "网页";
+          homeSearchResults.appendChild(webTitle);
+
+          const normalized = normalizeWebInput(query);
+          const webOpen = document.createElement("button");
+          webOpen.className = "search-result-item";
+          webOpen.textContent = `打开网址 · ${normalized}`;
+          webOpen.addEventListener("click", () =>
+            openFromHomeSearchWeb(normalized),
+          );
+          homeSearchResults.appendChild(webOpen);
+
+          if (!query.includes(".") && !query.startsWith("http")) {
+            const webSearch = document.createElement("button");
+            webSearch.className = "search-result-item";
+            webSearch.textContent = `网页搜索 · ${query}`;
+            webSearch.addEventListener("click", () =>
+              openFromHomeSearchWeb(query),
+            );
+            homeSearchResults.appendChild(webSearch);
+          }
+
+          homeSearchResults.classList.add("active");
+        }
+
+        homeSearch.addEventListener("input", (e) => {
+          renderHomeSearchResults(e.target.value);
+        });
+
+        homeSearch.addEventListener("focus", () => {
+          if (homeSearch.value.trim())
+            renderHomeSearchResults(homeSearch.value);
+        });
+
+        homeSearch.addEventListener("keydown", (e) => {
+          if (e.key !== "Enter") return;
+          const query = homeSearch.value.trim();
+          if (!query) return;
+          const exactApp = homeSearchApps.find((a) => a.name === query);
+          if (exactApp) {
+            if (exactApp.id === "editor") state.editorBinding = null;
+            openApp(exactApp.id);
+            homeSearch.value = "";
+            hideHomeSearchResults();
+            return;
+          }
+          openFromHomeSearchWeb(query);
+          homeSearch.value = "";
+        });
+
+        let gesture = null;
+        Phone.addEventListener("pointerdown", (e) => {
+          if (
+            e.target.closest(".device-bubble") ||
+            e.target.closest("#Keyboard")
+          )
+            return;
+          const r = Phone.getBoundingClientRect();
+          const x = e.clientX - r.left;
+          const y = e.clientY - r.top;
+          gesture = { sx: x, sy: y, ex: x, ey: y, t: Date.now(), type: "" };
+
+          if (state.locked) {
+            gesture.type = "unlock";
+            return;
+          }
+
+          if (y < 34) {
+            gesture.type = x < r.width / 2 ? "top-left" : "top-right";
+          } else if (y > r.height - 26) {
+            if (x < 66 || x > r.width - 66) gesture.type = "corner";
+            else gesture.type = "bottom";
+          } else if ((x < 18 || x > r.width - 18) && state.currentApp) {
+            gesture.type = "edge";
+          }
+        });
+
+        Phone.addEventListener("pointermove", (e) => {
+          if (!gesture) return;
+          const r = Phone.getBoundingClientRect();
+          gesture.ex = e.clientX - r.left;
+          gesture.ey = e.clientY - r.top;
+        });
+
+        Phone.addEventListener("pointerup", () => {
+          if (!gesture) return;
+          const dx = gesture.ex - gesture.sx;
+          const dy = gesture.ey - gesture.sy;
+          const dt = Date.now() - gesture.t;
+
+          if (state.locked && gesture.type === "unlock") {
+            if (dy < -88) unlockPhone();
+            gesture = null;
+            return;
+          }
+
+          if (gesture.type === "top-left" && dy > 80) {
+            showLayer(NotificationCenter);
+            hideLayer(ControlPanel);
+            hideLayer(ServiceCenter);
+          } else if (gesture.type === "top-right" && dy > 80) {
+            showLayer(ControlPanel);
+            hideLayer(NotificationCenter);
+            hideLayer(ServiceCenter);
+          } else if (gesture.type === "bottom" && dy < -88) {
+            if (state.currentApp && dt > 420) {
+              showLayer(AppContainer);
+              TaskSwitcher.classList.add("active");
+            } else {
+              goHome();
+            }
+          } else if (
+            gesture.type === "corner" &&
+            dy < -88 &&
+            ((gesture.sx < 66 && dx > 18) || (gesture.sx > 320 && dx < -18))
+          ) {
+            showLayer(ServiceCenter);
+            hideLayer(ControlPanel);
+            hideLayer(NotificationCenter);
+          } else if (gesture.type === "edge" && dt < 620) {
+            if ((gesture.sx < 18 && dx > 86) || (gesture.sx > 370 && dx < -86))
+              goBack();
+          }
+          gesture = null;
+        });
+
+        TaskSwitcher.addEventListener("click", () =>
+          TaskSwitcher.classList.remove("active"),
+        );
+
+        document.addEventListener("click", (e) => {
+          if (e.target === ControlPanel) hideLayer(ControlPanel);
+          if (e.target === NotificationCenter) hideLayer(NotificationCenter);
+          if (e.target === ServiceCenter) hideLayer(ServiceCenter);
+          if (
+            !e.target.closest("#homeSearchResults") &&
+            !e.target.closest("#homeSearch")
+          ) {
+            hideHomeSearchResults();
+          }
+        });
+
+        function showSheet(text, duration = 1800) {
+          const n = document.createElement("div");
+          n.className = "sheet";
+          n.textContent = text;
+          SheetLayer.appendChild(n);
+          setTimeout(() => n.remove(), duration);
+        }
+
+        function showDialog({
+          title = "提示",
+          message = "",
+          withInput = false,
+          defaultValue = "",
+          placeholder = "",
+          okText = "确定",
+          cancelText = "取消",
+          danger = false,
+        }) {
+          return new Promise((resolve) => {
+            DialogLayer.classList.add("active");
+            DialogLayer.innerHTML = `
+              <div class="dialog-card">
+                <div class="dialog-title">${title}</div>
+                <div class="dialog-msg">${message}</div>
+                ${
+                  withInput
+                    ? `<input class="dialog-input" id="dialogInput" value="${(defaultValue || "").replace(/"/g, "&quot;")}" placeholder="${(placeholder || "").replace(/"/g, "&quot;")}">`
+                    : ""
+                }
+                <div class="dialog-actions">
+                  <button class="dialog-btn cancel" id="dialogCancel">${cancelText}</button>
+                  <button class="dialog-btn ok ${danger ? "danger" : ""}" id="dialogOk">${okText}</button>
+                </div>
+              </div>
+            `;
+            const input = document.getElementById("dialogInput");
+            const close = (ok) => {
+              const value = input ? input.value : "";
+              DialogLayer.classList.remove("active");
+              DialogLayer.innerHTML = "";
+              resolve({ ok, value });
+            };
+            document
+              .getElementById("dialogCancel")
+              .addEventListener("click", () => close(false));
+            document
+              .getElementById("dialogOk")
+              .addEventListener("click", () => close(true));
+            DialogLayer.addEventListener(
+              "click",
+              (e) => {
+                if (e.target === DialogLayer) close(false);
+              },
+              { once: true },
+            );
+            if (input) {
+              input.focus();
+              input.select();
+              input.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") close(true);
+                if (e.key === "Escape") close(false);
+              });
+            }
+          });
+        }
+
+        async function askText(title, defaultValue, placeholder) {
+          const r = await showDialog({
+            title,
+            message: "请输入名称",
+            withInput: true,
+            defaultValue,
+            placeholder,
+            okText: "确定",
+            cancelText: "取消",
+          });
+          return r.ok ? r.value : null;
+        }
+
+        async function askConfirm(message, danger) {
+          const r = await showDialog({
+            title: "确认操作",
+            message,
+            okText: "确认",
+            cancelText: "取消",
+            danger: !!danger,
+          });
+          return r.ok;
+        }
+
+        const bubbles = [...document.querySelectorAll(".device-bubble")];
+        const centerDevice = document.getElementById("centerDevice");
+        const deviceStatus = document.getElementById("deviceStatus");
+        let dragBubble = null;
+
+        bubbles.forEach((bubble) => {
+          bubble.dataset.initStyle = bubble.getAttribute("style") || "";
+          bubble.addEventListener("pointerdown", (e) => {
+            e.stopPropagation();
+            const box = document
+              .getElementById("superDevice")
+              .getBoundingClientRect();
+            const b = bubble.getBoundingClientRect();
+            dragBubble = {
+              el: bubble,
+              offsetX: e.clientX - b.left,
+              offsetY: e.clientY - b.top,
+              box,
+            };
+            bubble.classList.add("dragging");
+            bubble.setPointerCapture(e.pointerId);
+          });
+          bubble.addEventListener("pointermove", (e) => {
+            if (!dragBubble || dragBubble.el !== bubble) return;
+            const x = e.clientX - dragBubble.box.left - dragBubble.offsetX;
+            const y = e.clientY - dragBubble.box.top - dragBubble.offsetY;
+            bubble.style.left = `${Math.max(0, Math.min(x, dragBubble.box.width - 84))}px`;
+            bubble.style.top = `${Math.max(0, Math.min(y, dragBubble.box.height - 84))}px`;
+            bubble.style.right = "auto";
+            bubble.style.bottom = "auto";
+          });
+          bubble.addEventListener("pointerup", () => {
+            if (!dragBubble || dragBubble.el !== bubble) return;
+            bubble.classList.remove("dragging");
+            const cb = centerDevice.getBoundingClientRect();
+            const bb = bubble.getBoundingClientRect();
+            const cx = cb.left + cb.width / 2;
+            const cy = cb.top + cb.height / 2;
+            const bx = bb.left + bb.width / 2;
+            const by = bb.top + bb.height / 2;
+            const d = Math.hypot(cx - bx, cy - by);
+
+            if (d < 78) {
+              bubble.classList.add("connected");
+              bubble.style.left = `${centerDevice.offsetLeft + 5}px`;
+              bubble.style.top = `${centerDevice.offsetTop + 5}px`;
+              bubble.style.right = "auto";
+              bubble.style.bottom = "auto";
+              deviceStatus.textContent = `${bubble.dataset.device} 已连接，可进行多设备协同。`;
+              showSheet(`${bubble.dataset.device} 已连接`);
+            } else if (!bubble.classList.contains("connected")) {
+              bubble.setAttribute("style", bubble.dataset.initStyle);
+            }
+            dragBubble = null;
+          });
+          bubble.addEventListener("pointercancel", () => {
+            bubble.classList.remove("dragging");
+            if (dragBubble && dragBubble.el === bubble) dragBubble = null;
+          });
+        });
+
+        const widgetGesture = new Map();
+        document
+          .querySelectorAll(".app-icon-wrap[data-widget-target]")
+          .forEach((wrap) => {
+            const btn = wrap.querySelector(".app-icon");
+            btn.addEventListener("pointerdown", (e) => {
+              widgetGesture.set(btn, { y: e.clientY, t: Date.now() });
+            });
+            btn.addEventListener("pointerup", (e) => {
+              const g = widgetGesture.get(btn);
+              if (!g) return;
+              const dy = e.clientY - g.y;
+              const dt = Date.now() - g.t;
+              if (dy < -36 && dt < 520) {
+                const target = document.getElementById(
+                  wrap.dataset.widgetTarget,
+                );
+                if (target) {
+                  target.classList.add("visible");
+                  wrap.style.display = "none";
+                  showSheet("已上滑呼出服务卡片");
+                }
+              }
+              widgetGesture.delete(btn);
+            });
+          });
+
+        function addServiceWidget(name) {
+          const grid = document.getElementById("desktopGrid");
+          const node = document.createElement("div");
+          node.className = "widget-steps card";
+          node.innerHTML = `<div><div style="font-size:12px;color:#3c6387;">${name}服务</div><div style="font-size:20px;font-weight:700;color:#184166;">已添加</div></div><div class="steps-pill"></div>`;
+          grid.appendChild(node);
+          showSheet(`${name} 已添加到桌面`);
+        }
+
+        document.querySelectorAll("[data-add-service]").forEach((btn) => {
+          btn.addEventListener("click", () =>
+            addServiceWidget(btn.dataset.addService),
+          );
+        });
+
+        const momentGrid = document.getElementById("momentGrid");
+        const viewer = document.getElementById("photoViewer");
+        const viewerImg = document.getElementById("viewerImg");
+        const closeViewer = document.getElementById("closeViewer");
+        let viewerScale = 1;
+        let pinchStartDist = 0;
+        let pinchBaseScale = 1;
+
+        function applyGalleryBackground(node, item) {
+          const bg = item.src ? `url("${item.src}")` : item.art;
+          node.style.backgroundImage =
+            bg ||
+            "linear-gradient(135deg, #9dd7ff 0%, #4f9eff 48%, #2f6fdb 100%)";
+        }
+
+        function renderGallery() {
+          if (!state.galleryItems.length) {
+            const seed = [
+              {
+                tag: "2月",
+                cls: "big",
+                art: "linear-gradient(155deg, #7fc7ff 0%, #4c9cf4 42%, #1c5ec8 100%), radial-gradient(220px 160px at 20% 14%, rgba(255,255,255,.36), transparent 58%)",
+              },
+              {
+                tag: "昨日",
+                cls: "wide",
+                art: "linear-gradient(130deg, #ffd89b 0%, #ff9a62 38%, #d85e83 100%), radial-gradient(260px 150px at 74% 6%, rgba(255,255,255,.34), transparent 52%)",
+              },
+              {
+                tag: "旅行",
+                cls: "",
+                art: "linear-gradient(145deg, #7be0d1 0%, #45b6d6 42%, #2c6bc9 100%), radial-gradient(180px 140px at 20% 82%, rgba(255,255,255,.25), transparent 52%)",
+              },
+              {
+                tag: "2月7日",
+                cls: "big",
+                art: "linear-gradient(148deg, #e2e8ff 0%, #9db7ff 36%, #5f7de8 100%), radial-gradient(200px 140px at 84% 20%, rgba(255,255,255,.4), transparent 54%)",
+              },
+              {
+                tag: "晚霞",
+                cls: "",
+                art: "linear-gradient(145deg, #ffb08f 0%, #f57ca2 44%, #7b64df 100%), radial-gradient(160px 120px at 72% 14%, rgba(255,255,255,.3), transparent 58%)",
+              },
+              {
+                tag: "周末",
+                cls: "wide",
+                art: "linear-gradient(135deg, #86d7ff 0%, #4f9df3 38%, #1b67d0 100%), radial-gradient(240px 150px at 14% 70%, rgba(255,255,255,.28), transparent 56%)",
+              },
+              {
+                tag: "1月",
+                cls: "",
+                art: "linear-gradient(150deg, #8dd0a4 0%, #57b6a7 40%, #3d76bf 100%), radial-gradient(180px 120px at 78% 20%, rgba(255,255,255,.33), transparent 56%)",
+              },
+              {
+                tag: "美食",
+                cls: "",
+                art: "linear-gradient(140deg, #ffd07d 0%, #ff9f6a 36%, #f06d8f 100%), radial-gradient(180px 130px at 15% 82%, rgba(255,255,255,.26), transparent 54%)",
+              },
+            ];
+            state.galleryItems = seed.map((it, i) => ({
+              id: `p-${i}`,
+              tag: it.tag,
+              cls: it.cls,
+              src: it.src || "",
+              art: it.art || "",
+            }));
+          }
+          momentGrid.innerHTML = "";
+          state.galleryItems.forEach((item, i) => {
+            const div = document.createElement("div");
+            div.className = `photo-tile ${item.cls || ""}`;
+            applyGalleryBackground(div, item);
+            div.innerHTML = `<div class="photo-tag">${item.tag}</div>`;
+            div.addEventListener("click", () => openViewer(i));
+            momentGrid.appendChild(div);
+          });
+        }
+
+        function openViewer(index) {
+          const item = state.galleryItems[index];
+          applyGalleryBackground(viewerImg, item);
+          viewer.classList.add("active");
+          viewerScale = 1;
+          viewerImg.style.transform = "scale(1)";
+        }
+
+        function setViewerScale(v) {
+          viewerScale = Math.max(1, Math.min(v, 4));
+          viewerImg.style.transform = `scale(${viewerScale})`;
+        }
+
+        closeViewer.addEventListener("click", () =>
+          viewer.classList.remove("active"),
+        );
+        viewer.addEventListener("click", (e) => {
+          if (e.target === viewer) viewer.classList.remove("active");
+        });
+        viewer.addEventListener("wheel", (e) => {
+          e.preventDefault();
+          setViewerScale(viewerScale + (e.deltaY < 0 ? 0.1 : -0.1));
+        });
+        viewer.addEventListener(
+          "touchstart",
+          (e) => {
+            if (e.touches.length === 2) {
+              const [a, b] = e.touches;
+              pinchStartDist = Math.hypot(
+                a.clientX - b.clientX,
+                a.clientY - b.clientY,
+              );
+              pinchBaseScale = viewerScale;
+            }
+          },
+          { passive: true },
+        );
+        viewer.addEventListener(
+          "touchmove",
+          (e) => {
+            if (e.touches.length === 2 && pinchStartDist) {
+              const [a, b] = e.touches;
+              const d = Math.hypot(
+                a.clientX - b.clientX,
+                a.clientY - b.clientY,
+              );
+              setViewerScale(pinchBaseScale * (d / pinchStartDist));
+            }
+          },
+          { passive: true },
+        );
+        viewer.addEventListener("touchend", () => {
+          pinchStartDist = 0;
+        });
+
+        renderGallery();
+
+        const dialPad = document.getElementById("dialPad");
+        const dialInput = document.getElementById("dialInput");
+        const callStatus = document.getElementById("callStatus");
+        ["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"].forEach(
+          (n) => {
+            const b = document.createElement("button");
+            b.className = "dial-key";
+            b.textContent = n;
+            b.addEventListener("click", () => {
+              dialInput.value += n;
+            });
+            dialPad.appendChild(b);
+          },
+        );
+
+        document.getElementById("callBtn").addEventListener("click", () => {
+          if (!dialInput.value.trim()) {
+            showSheet("请输入号码");
+            return;
+          }
+          state.callActive = true;
+          callStatus.textContent = `正在呼叫 ${dialInput.value}...`;
+        });
+
+        document.getElementById("hangBtn").addEventListener("click", () => {
+          state.callActive = false;
+          callStatus.textContent = "已挂断";
+        });
+
+        const meetimeStatus = document.getElementById("meetimeStatus");
+        document.getElementById("meetimeCall").addEventListener("click", () => {
+          state.meetimeActive = true;
+          meetimeStatus.textContent = "通话中（加密已启用）";
+        });
+        document.getElementById("meetimeHang").addEventListener("click", () => {
+          state.meetimeActive = false;
+          meetimeStatus.textContent = "已结束通话";
+        });
+
+        const defaultFsRoot = {
+          type: "folder",
+          name: "我的文件",
+          children: [
+            {
+              type: "folder",
+              name: "下载",
+              children: [
+                {
+                  type: "file",
+                  name: "指南.txt",
+                  content: "欢迎使用文件系统。",
+                },
+              ],
+            },
+            {
+              type: "folder",
+              name: "文档",
+              children: [
+                {
+                  type: "file",
+                  name: "项目计划.md",
+                  content: "# 项目计划\n\n- 目标\n- 里程碑\n",
+                },
+              ],
+            },
+            {
+              type: "file",
+              name: "待办.txt",
+              content: "1. 完成演示\n2. 联调功能\n",
+            },
+          ],
+        };
+        const filePath = document.getElementById("filePath");
+        const fileList = document.getElementById("fileList");
+
+        function sanitizeName(name, fallbackName) {
+          if (name === null) return "";
+          const s = (name || "").trim().replace(/[\\/:*?"<>|]/g, "_");
+          return s || fallbackName;
+        }
+
+        function cloneDefaultFs() {
+          return JSON.parse(JSON.stringify(defaultFsRoot));
+        }
+
+        function normalizeFsNode(node) {
+          if (!node || typeof node !== "object") return null;
+          if (node.type === "folder") {
+            const folderName = sanitizeName(node.name, "未命名文件夹");
+            const list = Array.isArray(node.children) ? node.children : [];
+            const children = list
+              .map((child) => normalizeFsNode(child))
+              .filter(Boolean);
+            return { type: "folder", name: folderName, children };
+          }
+          const fileName = sanitizeName(node.name, "未命名.txt");
+          const content = typeof node.content === "string" ? node.content : "";
+          return { type: "file", name: fileName, content };
+        }
+
+        let fsRoot = cloneDefaultFs();
+        try {
+          const rawFs = localStorage.getItem("webos.fsRoot");
+          if (rawFs) {
+            const parsed = normalizeFsNode(JSON.parse(rawFs));
+            if (parsed && parsed.type === "folder") fsRoot = parsed;
+          }
+        } catch {}
+
+        const fsPath = [fsRoot];
+        const fsIndexPath = [];
+
+        function saveFs() {
+          localStorage.setItem("webos.fsRoot", JSON.stringify(fsRoot));
+        }
+
+        function currentFolder() {
+          return fsPath[fsPath.length - 1];
+        }
+
+        function upsertFileInRoot(name, content) {
+          const folder = fsRoot;
+          const idx = folder.children.findIndex(
+            (child) => child.type === "file" && child.name === name,
+          );
+          if (idx >= 0) {
+            folder.children[idx].content = content;
+            return idx;
+          }
+          folder.children.push({ type: "file", name, content });
+          return folder.children.length - 1;
+        }
+
+        function getNodeByIndexPath(path) {
+          let node = fsRoot;
+          for (const idx of path) {
+            if (!node || node.type !== "folder" || !node.children[idx])
+              return null;
+            node = node.children[idx];
+          }
+          return node;
+        }
+
+        function loadFsFileIntoEditor(path, silent) {
+          const fileNode = getNodeByIndexPath(path);
+          if (!fileNode || fileNode.type !== "file") {
+            state.editorBinding = null;
+            if (!silent) showSheet("文件不存在或已被删除");
+            return;
+          }
+          state.editorBinding = { path: [...path] };
+          editorName.value = fileNode.name;
+          editorContent.value = fileNode.content || "";
+          editorStatus.textContent = "文件系统文件";
+          if (!silent) openApp("editor");
+        }
+
+        function renderFiles() {
+          filePath.textContent = "/" + fsPath.map((n) => n.name).join("/");
+          fileList.innerHTML = "";
+          const folder = currentFolder();
+          if (!folder.children.length) {
+            const e = document.createElement("div");
+            e.className = "file-item";
+            e.textContent = "空文件夹";
+            fileList.appendChild(e);
+            return;
+          }
+          folder.children.forEach((it, idx) => {
+            const row = document.createElement("div");
+            row.className = "file-item";
+
+            const name = document.createElement("span");
+            name.className = "file-name";
+            name.textContent = `${it.type === "folder" ? "📁" : "📄"} ${it.name}`;
+            name.addEventListener("click", () => {
+              if (it.type === "folder") {
+                fsPath.push(it);
+                fsIndexPath.push(idx);
+                renderFiles();
+                return;
+              }
+              loadFsFileIntoEditor([...fsIndexPath, idx], false);
+            });
+
+            const del = document.createElement("button");
+            del.className = "danger";
+            del.textContent = "删除";
+            del.addEventListener("click", async (e) => {
+              e.stopPropagation();
+              const ok = await askConfirm(`确认删除 ${it.name} ?`, true);
+              if (!ok) return;
+              folder.children.splice(idx, 1);
+              saveFs();
+              renderFiles();
+            });
+
+            row.appendChild(name);
+            row.appendChild(del);
+            fileList.appendChild(row);
+          });
+        }
+
+        document
+          .getElementById("newFolderBtn")
+          .addEventListener("click", async () => {
+            const suggested = `新建文件夹${Math.floor(Math.random() * 90 + 10)}`;
+            const input = await askText(
+              "新建文件夹",
+              suggested,
+              "输入文件夹名称",
+            );
+            const name = sanitizeName(input, suggested);
+            if (!name) return;
+            currentFolder().children.push({
+              type: "folder",
+              name,
+              children: [],
+            });
+            saveFs();
+            renderFiles();
+          });
+
+        document
+          .getElementById("newFileBtn")
+          .addEventListener("click", async () => {
+            const suggested = `文件${Math.floor(Math.random() * 90 + 10)}.txt`;
+            const input = await askText("新建文件", suggested, "输入文件名");
+            const name = sanitizeName(input, suggested);
+            if (!name) return;
+            currentFolder().children.push({ type: "file", name, content: "" });
+            saveFs();
+            renderFiles();
+          });
+
+        document.getElementById("upFolderBtn").addEventListener("click", () => {
+          if (fsPath.length > 1) {
+            fsPath.pop();
+            fsIndexPath.pop();
+          }
+          renderFiles();
+        });
+
+        saveFs();
+        renderFiles();
+
+        const urlInput = document.getElementById("urlInput");
+        const webFrame = document.getElementById("webFrame");
+        const browserStatus = document.getElementById("browserStatus");
+
+        function normalizeWebInput(raw) {
+          const s = (raw || "").trim();
+          if (!s) return "";
+          if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(s)) return s;
+          if (s.startsWith("www.")) return `https://${s}`;
+          if (/^[^/\s]+\.[^/\s]+/.test(s)) return `https://${s}`;
+          return `https://www.baidu.com/s?wd=${encodeURIComponent(s)}`;
+        }
+
+        function openWebByInput(preferExternal, autoOpen = false) {
+          const normalized = normalizeWebInput(urlInput.value);
+          if (!normalized) {
+            showSheet("请输入网址");
+            return;
+          }
+          urlInput.value = normalized;
+
+          webFrame.removeAttribute("srcdoc");
+          webFrame.src = normalized;
+          browserStatus.textContent = `正在打开: ${normalized}`;
+
+          let forceExternal = false;
+          try {
+            const host = new URL(normalized).hostname.toLowerCase();
+            forceExternal =
+              host.endsWith("baidu.com") || host.includes("wikipedia.org");
+          } catch {}
+
+          // Many major websites deny iframe embedding; open a safe fallback tab.
+          if ((preferExternal || forceExternal) && !autoOpen) {
+            const win = window.open(
+              normalized,
+              "_blank",
+              "noopener,noreferrer",
+            );
+            if (win) {
+              browserStatus.textContent = forceExternal
+                ? "该站点可能限制嵌入，已自动在新标签打开"
+                : "已在新标签打开该网页";
+            } else {
+              browserStatus.textContent =
+                "站点可能限制嵌入，请允许弹窗后重试“新标签”";
+            }
+          } else {
+            browserStatus.textContent = forceExternal
+              ? "该站点可能限制嵌入，建议点击“新标签”完整打开"
+              : "若页面空白，点“新标签”打开（部分网站禁止嵌入）";
+          }
+        }
+
+        document.getElementById("openUrlBtn").addEventListener("click", () => {
+          openWebByInput(false);
+        });
+        document
+          .getElementById("openExternalBtn")
+          .addEventListener("click", () => openWebByInput(true));
+        urlInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") openWebByInput(false);
+        });
+        openWebByInput(false, true);
+
+        const video = document.getElementById("cameraVideo");
+        const canvas = document.getElementById("cameraCanvas");
+        const cameraStatus = document.getElementById("cameraStatus");
+
+        async function startCamera() {
+          if (state.cameraStream) return;
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            cameraStatus.textContent = "当前浏览器不支持摄像头";
+            return;
+          }
+          try {
+            state.cameraStream = await navigator.mediaDevices.getUserMedia({
+              video: true,
+              audio: false,
+            });
+            video.srcObject = state.cameraStream;
+            cameraStatus.textContent = "摄像头已开启";
+          } catch (err) {
+            cameraStatus.textContent = "摄像头权限被拒绝";
+          }
+        }
+
+        function stopCamera() {
+          if (state.cameraStream) {
+            state.cameraStream.getTracks().forEach((t) => t.stop());
+            state.cameraStream = null;
+            video.srcObject = null;
+          }
+        }
+
+        document.getElementById("captureBtn").addEventListener("click", () => {
+          const w = video.videoWidth || 720;
+          const h = video.videoHeight || 1280;
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return;
+          ctx.drawImage(video, 0, 0, w, h);
+          const data = canvas.toDataURL("image/jpeg", 0.85);
+          state.galleryItems.unshift({
+            id: `camera-${Date.now()}`,
+            tag: "刚刚",
+            cls: "big",
+            src: data,
+          });
+          renderGallery();
+          cameraStatus.textContent = "已拍照并保存到图库";
+          showSheet("照片已保存");
+        });
+
+        const mails = [
+          {
+            id: "m1",
+            title: "会议提醒",
+            body: "今天 14:00 评审会，请提前准备演示稿。",
+            type: "短信",
+            from: "项目组",
+            time: "今天 09:20",
+          },
+          {
+            id: "m2",
+            title: "周报提交",
+            body: "请于今晚 20:00 前提交本周进展。",
+            type: "邮件",
+            from: "PMO <pmo@example.com>",
+            time: "今天 10:06",
+          },
+          {
+            id: "m3",
+            title: "快递已签收",
+            body: "您的快递已放入快递柜，取件码 7621。",
+            type: "短信",
+            from: "快递助手",
+            time: "今天 12:14",
+          },
+          {
+            id: "m4",
+            title: "差旅审批通过",
+            body: "您的差旅申请已通过，可在日程中查看。",
+            type: "邮件",
+            from: "HR 系统 <hr@example.com>",
+            time: "昨天 18:32",
+          },
+        ];
+        const mailList = document.getElementById("mailList");
+        const mailDetail = document.getElementById("mailDetail");
+        const mailFilterButtons =
+          document.querySelectorAll("[data-mail-filter]");
+        let currentMailFilter = "all";
+        let activeMailId = "";
+
+        function renderMailDetail(mail) {
+          if (!mail) {
+            mailDetail.innerHTML = "选择一条消息查看详情";
+            return;
+          }
+          mailDetail.innerHTML = `
+            <div style="font-size:16px;font-weight:700;color:#1a466f;margin-bottom:6px;">${mail.title}</div>
+            <div class="sub" style="margin-bottom:8px;">${mail.type} · ${mail.from} · ${mail.time}</div>
+            <div style="font-size:14px;line-height:1.6;color:#315b82;">${mail.body}</div>
+          `;
+        }
+
+        function renderMails() {
+          const filtered =
+            currentMailFilter === "all"
+              ? mails
+              : mails.filter((m) => m.type === currentMailFilter);
+          mailList.innerHTML = "";
+          filtered.forEach((m) => {
+            const item = document.createElement("div");
+            item.className = "mail-item";
+            item.innerHTML = `<div style="font-weight:650;">${m.title}</div><div class="sub">${m.type} · ${m.time}</div>`;
+            if (m.id === activeMailId) item.classList.add("active");
+            item.addEventListener("click", () => {
+              [...mailList.children].forEach((c) =>
+                c.classList.remove("active"),
+              );
+              item.classList.add("active");
+              activeMailId = m.id;
+              renderMailDetail(m);
+            });
+            mailList.appendChild(item);
+          });
+          const selected =
+            filtered.find((m) => m.id === activeMailId) || filtered[0];
+          if (selected) {
+            activeMailId = selected.id;
+            renderMailDetail(selected);
+            [...mailList.children].forEach((node, idx) => {
+              if (filtered[idx] && filtered[idx].id === activeMailId) {
+                node.classList.add("active");
+              }
+            });
+          } else {
+            renderMailDetail(null);
+          }
+        }
+
+        mailFilterButtons.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            mailFilterButtons.forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            currentMailFilter = btn.dataset.mailFilter;
+            renderMails();
+          });
+        });
+
+        renderMails();
+
+        const calcDisplay = document.getElementById("calcDisplay");
+        const calcGrid = document.getElementById("calcGrid");
+        const calcKeys = [
+          "C",
+          "(",
+          ")",
+          "÷",
+          "7",
+          "8",
+          "9",
+          "×",
+          "4",
+          "5",
+          "6",
+          "-",
+          "1",
+          "2",
+          "3",
+          "+",
+          "0",
+          ".",
+          "=",
+          "%",
+        ];
+
+        function updateCalc() {
+          calcDisplay.value = state.calcExpr || "0";
+        }
+
+        calcKeys.forEach((k) => {
+          const b = document.createElement("button");
+          b.className = "calc-key";
+          if ("÷×-+%=".includes(k)) b.classList.add("op");
+          b.textContent = k;
+          b.addEventListener("click", () => {
+            if (k === "C") {
+              state.calcExpr = "";
+            } else if (k === "=") {
+              try {
+                const expr = state.calcExpr
+                  .replace(/×/g, "*")
+                  .replace(/÷/g, "/");
+                if (!/^[0-9+\-*/().%\s]+$/.test(expr)) throw new Error("bad");
+                state.calcExpr = String(
+                  Function(`"use strict";return (${expr})`)(),
+                );
+              } catch {
+                state.calcExpr = "错误";
+                setTimeout(() => {
+                  state.calcExpr = "";
+                  updateCalc();
+                }, 700);
+              }
+            } else {
+              state.calcExpr += k;
+            }
+            updateCalc();
+          });
+          calcGrid.appendChild(b);
+        });
+        updateCalc();
+
+        const editorName = document.getElementById("editorName");
+        const editorContent = document.getElementById("editorContent");
+        const editorStatus = document.getElementById("editorStatus");
+
+        function loadEditor() {
+          if (state.editorBinding && state.editorBinding.path) {
+            loadFsFileIntoEditor(state.editorBinding.path, true);
+            return;
+          }
+          const n = localStorage.getItem("editor.name") || "note.txt";
+          const c = localStorage.getItem("editor.content") || "";
+          editorName.value = n;
+          editorContent.value = c;
+          editorStatus.textContent = "";
+        }
+
+        document
+          .getElementById("saveEditorBtn")
+          .addEventListener("click", () => {
+            const finalName = sanitizeName(editorName.value, "note.txt");
+            if (!finalName) return;
+            editorName.value = finalName;
+
+            if (state.editorBinding && state.editorBinding.path) {
+              const fileNode = getNodeByIndexPath(state.editorBinding.path);
+              if (fileNode && fileNode.type === "file") {
+                fileNode.name = finalName;
+                fileNode.content = editorContent.value;
+                saveFs();
+                renderFiles();
+                editorStatus.textContent = "已保存到文件系统";
+                setTimeout(() => (editorStatus.textContent = ""), 1200);
+                return;
+              }
+              state.editorBinding = null;
+            }
+
+            localStorage.setItem("editor.name", finalName);
+            localStorage.setItem("editor.content", editorContent.value);
+            const fileIndex = upsertFileInRoot(finalName, editorContent.value);
+            state.editorBinding = { path: [fileIndex] };
+            saveFs();
+            renderFiles();
+            editorStatus.textContent = "已保存到文件系统 /我的文件";
+            setTimeout(() => (editorStatus.textContent = ""), 1200);
+          });
+        loadEditor();
+
+        function insertTextAtCursor(el, text) {
+          const start = el.selectionStart ?? el.value.length;
+          const end = el.selectionEnd ?? el.value.length;
+          const old = el.value;
+          el.value = old.slice(0, start) + text + old.slice(end);
+          const p = start + text.length;
+          el.setSelectionRange(p, p);
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+
+        function backspaceAtCursor(el) {
+          const start = el.selectionStart ?? el.value.length;
+          const end = el.selectionEnd ?? el.value.length;
+          if (start === end && start > 0) {
+            el.value = el.value.slice(0, start - 1) + el.value.slice(end);
+            el.setSelectionRange(start - 1, start - 1);
+          } else {
+            el.value = el.value.slice(0, start) + el.value.slice(end);
+            el.setSelectionRange(start, start);
+          }
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+
+        function showKeyboard(input) {
+          state.focusedInput = input;
+          Keyboard.classList.add("active");
+        }
+
+        function hideKeyboard() {
+          Keyboard.classList.remove("active");
+        }
+
+        function buildKeyboard() {
+          const rows = [
+            ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+            ["a", "s", "d", "f", "g", "h", "j", "k", "l", "⌫"],
+            ["z", "x", "c", "v", "b", "n", "m", "，", "。", "↵"],
+            ["123", "空格", "收起"],
+          ];
+          Keyboard.innerHTML = "";
+          rows.forEach((row, idx) => {
+            const line = document.createElement("div");
+            line.className = "key-row";
+            if (idx === 3)
+              line.style.gridTemplateColumns = "repeat(7, minmax(0, 1fr))";
+            row.forEach((k) => {
+              const key = document.createElement("button");
+              key.className = "key";
+              key.textContent = k;
+              if (k === "123" || k === "收起" || k === "⌫" || k === "↵")
+                key.classList.add("control");
+              if (k === "空格") key.classList.add("space");
+              key.addEventListener("mousedown", (e) => e.preventDefault());
+              key.addEventListener("click", () => {
+                const input = state.focusedInput;
+                if (!input) return;
+                input.focus();
+                if (k === "⌫") backspaceAtCursor(input);
+                else if (k === "↵") insertTextAtCursor(input, "\n");
+                else if (k === "空格") insertTextAtCursor(input, " ");
+                else if (k === "收起") hideKeyboard();
+                else if (k === "123") showSheet("数字键盘示意");
+                else insertTextAtCursor(input, k);
+              });
+              line.appendChild(key);
+            });
+            Keyboard.appendChild(line);
+          });
+        }
+        buildKeyboard();
+
+        document.querySelectorAll(".needs-keyboard").forEach((input) => {
+          input.addEventListener("focus", () => showKeyboard(input));
+          input.addEventListener("click", () => showKeyboard(input));
+        });
+
+        document.addEventListener("click", (e) => {
+          if (
+            !e.target.closest(".needs-keyboard") &&
+            !e.target.closest("#Keyboard")
+          )
+            hideKeyboard();
+        });
+
+        setTimeout(() => {
+          if (!state.locked) showSheet("电量较低，建议开启省电模式");
+        }, 28000);
+
+        hideLayer(HomeScreen);
+        hideLayer(AppContainer);
+        closeOverlays();
+        showLayer(LockScreen);
+      })();
+    </script>
+  </body>
+</html>
